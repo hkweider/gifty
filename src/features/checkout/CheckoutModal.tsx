@@ -36,7 +36,7 @@ export function CheckoutModal({ groups, onClose }: { groups: StoreGroup[]; onClo
     if (handoff.step === step && handoff.url) { window.open(handoff.url, '_blank', 'noopener'); return; }
     const tab = window.open('', '_blank');
     setHandoff({ step, busy: true });
-    const lines = g.items.filter((i) => !i.unavailable).map((i) => ({ variantId: getProduct(i.productId).live!.variantId, quantity: i.qty }));
+    const lines = g.items.filter((i) => !i.unavailable).map((i) => ({ variantId: i.variant?.id ?? getProduct(i.productId).live!.variantId, quantity: i.qty }));
     createStoreCart(g.storeDomain, lines)
       .then(({ continueUrl }) => {
         setHandoff({ step, url: continueUrl });

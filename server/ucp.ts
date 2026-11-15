@@ -24,7 +24,9 @@ export class UcpError extends Error {
 interface Money { amount: number; currency: string }
 interface UcpVariant {
   id: string; title?: string; price?: Money; list_price?: Money; checkout_url?: string;
-  availability?: { available?: boolean };
+  availability?: { available?: boolean; status?: string; running_low?: boolean };
+  requires?: { shipping?: boolean; selling_plan?: boolean };
+  eligible?: { native_checkout?: boolean };
   options?: { name: string; label: string }[];
   seller?: { name?: string; domain?: string; url?: string; links?: { type: string; url: string }[] };
 }
@@ -32,7 +34,8 @@ interface UcpProduct {
   id: string; title: string; url?: string;
   description?: { html?: string; plain?: string };
   media?: { type: string; url: string; alt_text?: string }[];
-  options?: { name: string; values: { label: string }[] }[];
+  options?: { name: string; values: { label: string; available?: boolean; exists?: boolean }[] }[];
+  selected?: { name: string; label: string }[];
   variants?: UcpVariant[];
   rating?: { value: number; scale_max?: number; count?: number };
   metadata?: { top_features?: string[] };
@@ -181,6 +184,68 @@ async function searchUncached(input: SearchInput) {
     products: (sc.products ?? []).map(normalize).filter((x): x is LiveProduct => !!x),
     cursor: sc.pagination?.has_next_page ? sc.pagination.cursor : undefined,
     total: sc.pagination?.total_count,
+  };
+}
+
+/** What the product view needs to let the buyer choose a variant (UCP get_product). */
+export interface ProductDetail {
+  id: string;
+  options: { name: string; values: { label: string; available: boolean; exists: boolean }[] }[];
+  selected: { name: string; label: string }[];
+  variant: {
+    id: string; title: string; price: number; listPrice?: number; currency: string;
+    available: boolean; status: string; runningLow: boolean;
+    requiresShipping: boolean; subscriptionOnly: boolean; nativeCheckout: boolean; checkoutUrl?: string;
+  } | null;
+  variantCount: number;
+  shipsToCountry: boolean;
+  country: string;
+}
+
+/**
+ * Variant selection with availability signals. `selected` narrows variants; `preferences` relaxes
+ * options from the end when an exact match isn't available. Filtering by ships_to tells us whether
+ * the selected variant can be delivered to the buyer's country.
+ */
+export async function getProductDetail(id: string, selected: { name: string; label: string }[] = [], country = 'CA'): Promise<ProductDetail> {
+  const args = (shipsTo: boolean) => ({
+    catalog: {
+      id,
+      ...(selected.length ? { selected, preferences: selected.map((s) => s.name) } : {}),
+      context: { address_country: country, currency: 'CAD' },
+      filters: { available: false, ...(shipsTo ? { ships_to: { country } } : {}) },
+    },
+  });
+  let shipsToCountry = true;
+  let sc: { product?: UcpProduct };
+  try {
+    sc = await callTool<{ product?: UcpProduct }>(CATALOG_ENDPOINT, 'get_product', args(true));
+    if (!sc.product) throw new UcpError('not found', 404);
+  } catch (e) {
+    if (e instanceof UcpError && e.status === 429) throw e;
+    // Not found when filtering by ships_to: the product exists but doesn't ship to this country.
+    sc = await callTool<{ product?: UcpProduct }>(CATALOG_ENDPOINT, 'get_product', args(false));
+    shipsToCountry = false;
+  }
+  const p = sc.product;
+  if (!p) throw new UcpError('Product not found', 404);
+  const v = p.variants?.[0];
+  return {
+    id: p.id,
+    options: (p.options ?? []).filter((o) => o.values.length > 1 || (p.options?.length ?? 0) > 1).map((o) => ({
+      name: o.name,
+      values: o.values.map((x) => ({ label: x.label, available: x.available !== false, exists: x.exists !== false })),
+    })).filter((o) => !(o.values.length === 1 && /^(title|default)/i.test(o.name))),
+    selected: p.selected ?? v?.options ?? [],
+    variant: v?.price ? {
+      id: v.id, title: v.title ?? '', price: major(v.price), listPrice: v.list_price ? major(v.list_price) : undefined, currency: v.price.currency,
+      available: v.availability?.available !== false, status: v.availability?.status ?? (v.availability?.available === false ? 'out_of_stock' : 'in_stock'),
+      runningLow: !!v.availability?.running_low, requiresShipping: v.requires?.shipping !== false, subscriptionOnly: !!v.requires?.selling_plan,
+      nativeCheckout: v.eligible?.native_checkout !== false, checkoutUrl: v.checkout_url,
+    } : null,
+    variantCount: p.variants?.length ?? 0,
+    shipsToCountry,
+    country,
   };
 }
 

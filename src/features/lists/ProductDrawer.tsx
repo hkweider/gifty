@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button, LinkButton } from '../../components/ui';
 import { Icon } from '../../components/Icon';
 import { useApp } from '../../store/AppStore';
-import { getProduct } from '../../lib/api';
+import { getProduct, getProductDetail, type ProductDetail } from '../../lib/api';
 import { money, priceOf } from '../../lib/format';
 import { reviewsFor } from '../../data/reviews';
 import { sampleReviews } from '../../data/mockReviews';
@@ -36,7 +36,30 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
   const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : undefined;
   const shortlisted = isShortlisted(p.id, ctx.personId, ctx.occasionId);
   const inCart = isInCart(p.id, ctx.personId, ctx.occasionId);
-  const salePct = p.listPrice ? Math.round((1 - p.price / p.listPrice) * 100) : 0;
+
+  // Live products: options, price, stock and delivery eligibility for the selected variant (get_product).
+  const [detail, setDetail] = useState<ProductDetail | null>(null);
+  const [detailState, setDetailState] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [selected, setSelected] = useState<{ name: string; label: string }[]>([]);
+  useEffect(() => { setDetail(null); setSelected([]); }, [p.id]);
+  useEffect(() => {
+    if (!p.live) return;
+    let alive = true;
+    setDetailState('loading');
+    getProductDetail(p.id, selected)
+      .then((d) => { if (alive) { setDetail(d); setDetailState('idle'); } })
+      .catch(() => alive && setDetailState('error'));
+    return () => { alive = false; };
+  }, [p.id, p.live, selected]);
+  const v = detail?.variant ?? null;
+  const price = v?.price ?? p.price;
+  const listPrice = v ? v.listPrice : p.listPrice;
+  const salePct = listPrice ? Math.round((1 - price / listPrice) * 100) : 0;
+  const canBuy = !p.live || !detail || (!!v && v.available && detail.shipsToCountry && !v.subscriptionOnly);
+  const choose = (name: string, label: string) =>
+    setSelected((cur) => [...(detail?.selected ?? cur).filter((x) => x.name !== name), { name, label }]);
+  const cartVariant = p.live && v ? { id: v.id, title: v.title, price: v.price, listPrice: v.listPrice } : undefined;
+  const variantLabel = p.live ? (detail?.selected.map((x) => x.label).join(' / ') || undefined) : variant;
   const thumbPos = ['center/cover', '20% 80%/260%', '80% 30%/260%'];
 
   return (
@@ -73,15 +96,16 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
             </div>
             )}
             <div className="col gap-6 min0">
-              <h2 className="t-18 w-700">{p.name}</h2>
+              <h2 className="t-18 w-700">{v && v.title.length > 12 && !/^default title$/i.test(v.title) ? v.title : p.name}</h2>
               {!p.live && <div className="t-12 muted">{p.maker ? `by ${p.maker} · ${p.blurb.replace('Gooseneck spout, ', '').replace(', ', ' · ')}` : p.blurb}</div>}
               <div className="row-base gap-8">
-                <span className="t-16 w-700 nowrap">{priceOf(p)}</span>
-                {p.listPrice && <span className="t-12 muted strike nowrap">{priceOf(p, p.listPrice)}</span>}
+                <span className="t-16 w-700 nowrap" aria-live="polite">{priceOf(p, price)}</span>
+                {listPrice && listPrice > price && <span className="t-12 muted strike nowrap">{priceOf(p, listPrice)}</span>}
                 {salePct > 0 && <span className="pill">Sale −{salePct}%</span>}
               </div>
-              <div className="t-11 muted">{p.live ? `Sold by ${p.store} · ships to Canada · price checked just now` : `Sold by ${p.store} · Arrives ${p.arrives} · checked 14 min ago`}</div>
-              {p.variants && (
+              <div className="t-11 muted">{p.live ? `Sold by ${p.store} · price checked just now` : `Sold by ${p.store} · Arrives ${p.arrives} · checked 14 min ago`}</div>
+              {p.live && <VariantPicker detail={detail} state={detailState} onChoose={choose} />}
+              {!p.live && p.variants && (
                 <div className="row gap-6">
                   {p.variants.map((v) => (
                     <button key={v} type="button" className="chip" aria-pressed={variant === v} onClick={() => setVariant(v)}>
@@ -104,7 +128,7 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
             <h3 className="t-14 w-700 row gap-8">Reviews · from {isSample ? `${r.sources.length} sources` : r.sources.length > 2 ? '1,000+ sources' : `${r.sources.length} sources`}{isSample && <span className="pill" title="Consumer Reports, Trustpilot, Reddit and TikTok are not connected yet. These reviews are sample data.">Sample</span>}</h3>
             <div className="row gap-20">
               <div className="col gap-2 none" style={{ width: 150 }}>
-                <div className="row-base gap-6"><span className="display-lg">{r.rating}</span><span className="t-12 muted">out of 5</span></div>
+                <div className="row-base gap-6"><span className="display-lg">{r.rating.toFixed(1)}</span><span className="t-12 muted">out of 5</span></div>
                 <div className="t-14" aria-label={`${r.rating} out of 5 stars`}>
                   <span className="stars">{'★'.repeat(Math.floor(r.rating))}</span>
                   <span className="stars--off">{'★'.repeat(5 - Math.floor(r.rating))}</span>
@@ -196,12 +220,12 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
         </div>
 
         <div className="drawer__foot">
-          <Button aria-pressed={shortlisted} onClick={() => toggleShortlist(p.id, ctx.personId, ctx.occasionId, variant)}>
+          <Button aria-pressed={shortlisted} onClick={() => toggleShortlist(p.id, ctx.personId, ctx.occasionId, variantLabel)}>
             {shortlisted ? '✓ Shortlisted' : '+ Shortlist'}
           </Button>
           <Button onClick={() => onCompare(p.id)}>Compare</Button>
-          <Button variant="primary" grow size="lg" disabled={inCart} onClick={() => addToCart(p.id, ctx.personId, ctx.occasionId)}>
-            <Icon name="cart" size={16} stroke={2} />{inCart ? 'In your cart' : 'Add to cart'}
+          <Button variant="primary" grow size="lg" disabled={inCart || !canBuy} onClick={() => addToCart(p.id, ctx.personId, ctx.occasionId, cartVariant)}>
+            <Icon name="cart" size={16} stroke={2} />{inCart ? 'In your cart' : !canBuy ? (v && !v.available ? 'Sold out' : 'Unavailable') : 'Add to cart'}
           </Button>
         </div>
       </aside>
@@ -279,5 +303,52 @@ function LiveDetails({ p }: { p: import('../../data/types').Product }) {
         </div>
       </section>
     </>
+  );
+}
+
+/** Colour/size choices with availability, plus stock and delivery eligibility for the chosen variant. */
+function VariantPicker({ detail, state, onChoose }: {
+  detail: ProductDetail | null; state: 'idle' | 'loading' | 'error';
+  onChoose: (name: string, label: string) => void;
+}) {
+  if (!detail) {
+    return <div className="t-11 muted">{state === 'error' ? 'Live stock and options are unavailable right now.' : 'Checking options and stock…'}</div>;
+  }
+  const v = detail.variant;
+  const isSel = (name: string, label: string) => detail.selected.some((x) => x.name === name && x.label === label);
+  const stock = !v ? { text: 'No variant matches this selection', tone: 'bad' }
+    : !v.available ? { text: 'Sold out', tone: 'bad' }
+      : v.runningLow ? { text: 'In stock · running low', tone: 'warn' }
+        : { text: 'In stock', tone: 'ok' };
+  const checks: { ok: boolean; text: string }[] = v ? [
+    { ok: detail.shipsToCountry, text: detail.shipsToCountry ? `Ships to ${detail.country === 'CA' ? 'Canada' : detail.country}` : `Doesn't ship to ${detail.country === 'CA' ? 'Canada' : detail.country}` },
+    { ok: !v.subscriptionOnly, text: v.subscriptionOnly ? 'Subscription only' : 'One-time purchase' },
+    { ok: v.nativeCheckout, text: v.nativeCheckout ? 'Shopify checkout' : 'Finishes on the store\'s own site' },
+  ] : [];
+  return (
+    <div className="col gap-8" aria-busy={state === 'loading'}>
+      {detail.options.map((o) => (
+        <div key={o.name} className="col gap-4">
+          <span className="t-11 w-700">{o.name}{detail.selected.find((x) => x.name === o.name) ? `: ${detail.selected.find((x) => x.name === o.name)!.label}` : ''}</span>
+          <div className="row gap-6 wrap" role="radiogroup" aria-label={o.name}>
+            {o.values.filter((x) => x.exists).slice(0, 12).map((x) => (
+              <button
+                key={x.label} type="button" role="radio" aria-checked={isSel(o.name, x.label)}
+                className={`chip${isSel(o.name, x.label) ? ' chip--on' : ''}`}
+                style={x.available ? undefined : { textDecoration: 'line-through', color: 'var(--faint)' }}
+                title={x.available ? undefined : 'Sold out'}
+                onClick={() => onChoose(o.name, x.label)}
+              >{x.label}</button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div className="row gap-6 wrap t-11">
+        <span className={`stock stock--${stock.tone}`}>{stock.text}</span>
+        {checks.map((c) => <span key={c.text} className={`check-pill${c.ok ? '' : ' is-no'}`}>{c.ok ? '✓' : '✕'} {c.text}</span>)}
+        {state === 'loading' && <span className="muted">Updating…</span>}
+      </div>
+      <div className="t-10 muted">Delivery dates are confirmed at checkout.</div>
+    </div>
   );
 }

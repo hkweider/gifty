@@ -105,6 +105,8 @@ export interface CartItem {
   qty: number;
   why?: string;
   giftMessage?: string;
+  /** Chosen variant for live products (defaults to the product's first variant). */
+  variant?: { id: string; title: string; price: number; listPrice?: number };
 }
 
 export interface SavedItem {

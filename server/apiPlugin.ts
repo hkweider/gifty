@@ -1,11 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Connect, Plugin } from 'vite';
-import { createCart, getProduct, searchCatalog, UcpError } from './ucp';
+import { createCart, getProduct, getProductDetail, searchCatalog, UcpError } from './ucp';
 
 /**
  * Mounts the Gifty API under /api on the Vite dev and preview servers:
  *   POST /api/catalog/search   { query, maxPrice?, intent?, limit?, cursor? }
  *   GET  /api/catalog/product?id=gid://shopify/p/…
+ *   POST /api/catalog/variant  { id, selected?: [{ name, label }] }
  *   POST /api/carts            { storeDomain, lines: [{ variantId, quantity }] }
  * The handlers in ./ucp are framework-agnostic; reuse them in your production server.
  */
@@ -33,6 +34,12 @@ async function route(req: IncomingMessage, res: ServerResponse) {
     const id = url.searchParams.get('id');
     if (!id) throw new UcpError('id is required', 400);
     return send(res, 200, await getProduct(id));
+  }
+  if (req.method === 'POST' && url.pathname === '/api/catalog/variant') {
+    const body = await json(req);
+    if (typeof body.id !== 'string') throw new UcpError('id is required', 400);
+    const selected = Array.isArray(body.selected) ? body.selected.filter((s: { name?: unknown; label?: unknown }) => typeof s?.name === 'string' && typeof s?.label === 'string').slice(0, 5) : [];
+    return send(res, 200, await getProductDetail(body.id, selected));
   }
   if (req.method === 'POST' && url.pathname === '/api/carts') {
     const ip = (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() || req.socket.remoteAddress;

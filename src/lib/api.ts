@@ -121,6 +121,25 @@ export async function searchLive(q: LiveQuery): Promise<Product[]> {
   return res.products.filter((d) => d.currency === CURRENCY).map((d) => toProduct(d, q.type));
 }
 
+export interface ProductDetail {
+  id: string;
+  options: { name: string; values: { label: string; available: boolean; exists: boolean }[] }[];
+  selected: { name: string; label: string }[];
+  variant: {
+    id: string; title: string; price: number; listPrice?: number; currency: string;
+    available: boolean; status: string; runningLow: boolean;
+    requiresShipping: boolean; subscriptionOnly: boolean; nativeCheckout: boolean; checkoutUrl?: string;
+  } | null;
+  variantCount: number;
+  shipsToCountry: boolean;
+  country: string;
+}
+
+/** Variant options, price, stock and delivery eligibility for one product (UCP get_product). */
+export async function getProductDetail(id: string, selected: { name: string; label: string }[] = []) {
+  return post<ProductDetail>('/api/catalog/variant', { id, selected });
+}
+
 /** Create a cart at one merchant and return the URL of that store's checkout. */
 export async function createStoreCart(storeDomain: string, lines: { variantId: string; quantity: number }[]) {
   return post<{ continueUrl: string; source: 'cart_mcp' | 'permalink'; total?: number }>('/api/carts', { storeDomain, lines });

@@ -33,7 +33,7 @@ interface Ctx {
   moveShortlist: (productId: string, from: { personId: string; occasionId: string }, to: { personId: string; occasionId: string }, keepCopy: boolean) => void;
   setShortlistStatus: (productId: string, personId: string, occasionId: string, status: ShortlistStatus) => void;
   isInCart: (productId: string, personId: string, occasionId: string) => boolean;
-  addToCart: (productId: string, personId: string, occasionId: string) => void;
+  addToCart: (productId: string, personId: string, occasionId: string, variant?: CartItem['variant']) => void;
   removeFromCart: (cartId: string) => void;
   saveForLater: (cartId: string) => void;
   moveSavedToCart: (savedId: string) => void;
@@ -146,10 +146,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       setShortlistStatus: (pid, per, occ, status) =>
         setShortlist((list) => list.map((s) => (same(s, pid, per, occ) ? { ...s, status } : s))),
-      addToCart: (pid, per, occ) => {
+      addToCart: (pid, per, occ, variant) => {
         if (isInCart(pid, per, occ)) return;
-        setCart((c) => [...c, { id: `c${Date.now()}`, productId: pid, personId: per, occasionId: occ, qty: 1 }]);
-        showToast({ message: `Added ${getProduct(pid).name} to your cart for ${label(per, occ)}` });
+        setCart((c) => [...c, { id: `c${Date.now()}`, productId: pid, personId: per, occasionId: occ, qty: 1, variant }]);
+        showToast({ message: `Added ${getProduct(pid).name}${variant?.title && variant.title !== 'Default Title' ? ` · ${variant.title}` : ''} to your cart for ${label(per, occ)}` });
       },
       removeFromCart: (id) => setCart((c) => c.filter((x) => x.id !== id)),
       saveForLater: (id) => {
@@ -239,13 +239,13 @@ export function summarizeCart(cart: CartItem[], issue: CartIssue = null) {
   const byStore = new Map<string, StoreGroup>();
   for (const c of cart) {
     const p = getProduct(c.productId);
-    let price = p.price;
+    let price = c.variant?.price ?? p.price;
     if (issue === 'price-changed' && c.productId === 'deskmat') price = 52;
     const unavailable = issue === 'out-of-stock' && c.productId === 'tea';
     const g = byStore.get(p.store) ?? {
       store: p.store, step: 0, items: [], listTotal: 0, discounts: 0, shippingTax: 0, total: 0,
     };
-    g.items.push({ ...c, price, listPrice: p.listPrice ?? price, unavailable });
+    g.items.push({ ...c, price, listPrice: (c.variant ? c.variant.listPrice : p.listPrice) ?? price, unavailable });
     byStore.set(p.store, g);
   }
   const groups = [...byStore.values()];

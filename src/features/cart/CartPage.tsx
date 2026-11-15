@@ -178,9 +178,10 @@ function StoreCard({ g, total, issue, onDeals, onMessage }: { g: StoreGroup; tot
             <Swatch tint={p.tint} size={56} image={p.live ? p.image : undefined} alt="" />
             <div className="flex1 col gap-4" style={{ position: 'relative' }}>
               <div className="row gap-10">
-                <span className="t-15 w-600">{p.name}</span>
+                <span className="t-15 w-600">{i.variant?.title && !/^default title$/i.test(i.variant.title) && i.variant.title.length > 12 ? i.variant.title : p.name}</span>
                 {!i.unavailable && <span className="t-11">Qty {i.qty} ▾</span>}
               </div>
+              {i.variant?.title && !/^default title$/i.test(i.variant.title) && i.variant.title.length <= 12 && <span className="t-11 muted">{i.variant.title}</span>}
               <div className="row gap-6">
                 <span className="pill pill--dark">for {person(i.personId).name} · {occ.name}</span>
                 {!i.unavailable && <button type="button" className="link-btn t-11">Change ▾</button>}
