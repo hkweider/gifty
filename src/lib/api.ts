@@ -103,11 +103,20 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 export interface LiveQuery { query: string; maxPrice?: number; intent?: string; type: ProductTypeId; limit?: number }
 
 /** Search Shopify's Global Catalog. Throws when live results are unavailable (shows the 05d state). */
+/** At most 2 catalog searches in flight from this page; the rest wait their turn. */
+let inFlight = 0;
+const waiting: (() => void)[] = [];
+async function limited<T>(fn: () => Promise<T>): Promise<T> {
+  if (inFlight >= 2) await new Promise<void>((r) => waiting.push(r));
+  inFlight++;
+  try { return await fn(); } finally { inFlight--; waiting.shift()?.(); }
+}
+
 export async function searchLive(q: LiveQuery): Promise<Product[]> {
-  const res = await post<{ products: LiveProductDto[] }>('/api/catalog/search', {
+  const res = await limited(() => post<{ products: LiveProductDto[] }>('/api/catalog/search', {
     query: q.query, maxPrice: Number.isFinite(q.maxPrice) ? q.maxPrice : undefined, intent: q.intent,
     limit: q.limit ?? 24, currency: CURRENCY,
-  });
+  }));
   return res.products.filter((d) => d.currency === CURRENCY).map((d) => toProduct(d, q.type));
 }
 

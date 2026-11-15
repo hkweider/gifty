@@ -18,7 +18,7 @@ const profile = () => process.env.UCP_AGENT_PROFILE || DEFAULT_PROFILE;
 const token = () => process.env.SHOPIFY_UCP_TOKEN || '';
 
 export class UcpError extends Error {
-  constructor(message: string, public status = 502) { super(message); }
+  constructor(message: string, public status = 502, public retryAfter?: number) { super(message); }
 }
 
 interface Money { amount: number; currency: string }
@@ -61,7 +61,22 @@ export interface LiveProduct {
 }
 
 let rpcId = 0;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Retries rate-limited calls (HTTP 429) with Retry-After / exponential backoff and jitter. */
 async function callTool<T>(endpoint: string, name: string, args: Record<string, unknown>, buyerIp?: string): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await callToolOnce<T>(endpoint, name, args, buyerIp);
+    } catch (e) {
+      if (!(e instanceof UcpError) || e.status !== 429 || attempt >= 3) throw e;
+      const wait = e.retryAfter ? e.retryAfter * 1000 : 500 * 2 ** attempt;
+      await sleep(Math.min(wait, 8000) + Math.random() * 250);
+    }
+  }
+}
+
+async function callToolOnce<T>(endpoint: string, name: string, args: Record<string, unknown>, buyerIp?: string): Promise<T> {
   const headers: Record<string, string> = { 'content-type': 'application/json', accept: 'application/json' };
   const auth = token();
   if (auth) {
@@ -78,7 +93,7 @@ async function callTool<T>(endpoint: string, name: string, args: Record<string, 
     }),
     signal: AbortSignal.timeout(20_000),
   });
-  if (res.status === 429) throw new UcpError('Shopify rate limit reached. Try again shortly.', 429);
+  if (res.status === 429) throw new UcpError('Shopify rate limit reached. Try again shortly.', 429, Number(res.headers.get('retry-after')) || undefined);
   if (!res.ok) throw new UcpError(`Shopify returned HTTP ${res.status}`);
   const body = await res.json() as { error?: { message?: string }; result?: { isError?: boolean; structuredContent?: T; content?: { text?: string }[] } };
   if (body.error) throw new UcpError(body.error.message ?? 'Shopify UCP error');
@@ -132,7 +147,21 @@ export interface SearchInput {
   cursor?: string;
 }
 
+const searchCache = new Map<string, { at: number; value: Awaited<ReturnType<typeof searchUncached>> }>();
+const SEARCH_TTL = 10 * 60 * 1000;
+
+/** Search with a 10-minute in-memory cache, so repeat page views don't spend rate limit. */
 export async function searchCatalog(input: SearchInput) {
+  const key = JSON.stringify([input.query, input.maxPrice, input.country, input.currency, input.intent, input.limit, input.cursor]);
+  const hit = searchCache.get(key);
+  if (hit && Date.now() - hit.at < SEARCH_TTL) return hit.value;
+  const value = await searchUncached(input);
+  searchCache.set(key, { at: Date.now(), value });
+  if (searchCache.size > 500) searchCache.delete(searchCache.keys().next().value!);
+  return value;
+}
+
+async function searchUncached(input: SearchInput) {
   if (!input.query?.trim()) throw new UcpError('A search query is required', 400);
   const country = input.country ?? 'CA';
   const sc = await callTool<{ products?: UcpProduct[]; pagination?: { cursor?: string; has_next_page?: boolean; total_count?: number } }>(

@@ -471,7 +471,7 @@ function LiveTile({ label, query, maxPrice, intent, who, onOpen }: { label: stri
   const pick = res.products.find((x) => x.image);
   const sub = res.status === 'loading' ? 'Searching…' : res.status === 'error' ? 'Unavailable right now' : res.products.length ? `${plural(res.products.length, 'idea')} for ${who}` : 'No ideas in budget';
   return (
-    <button type="button" className="type-tile" onClick={onOpen}>
+    <button type="button" className="type-tile" onClick={onOpen} title={res.status === 'error' ? res.error : undefined}>
       <span className="type-tile__img" style={{ background: pick ? `url("${pick.image}") center/cover, var(--${pick.tint})` : 'var(--surface-sunk)' }} />
       <span className="type-tile__body">
         <span className="t-13 w-700">{label}</span>
