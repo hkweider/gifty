@@ -19,11 +19,11 @@ export function CartWidget() {
         <span className="spacer" />
         <span className="t-11 w-600 nowrap">{plural(cart.length, 'item')}</span>
       </div>
-      <div className="cart-widget__thumbs" aria-hidden="true">
-        {(thumbs.length ? thumbs : [null, null, null]).map((c, i) => (
-          <CartThumb key={c?.id ?? i} productId={c?.productId} />
-        ))}
-      </div>
+      {thumbs.length > 0 && (
+        <div className="cart-widget__thumbs" aria-hidden="true">
+          {thumbs.map((c) => <CartThumb key={c.id} productId={c.productId} />)}
+        </div>
+      )}
       <div className="row-base gap-6">
         <span className="t-11 muted">Total</span>
         <span className="spacer" />

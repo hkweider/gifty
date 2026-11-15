@@ -1,6 +1,6 @@
 /* Simulated Universal Checkout: Gifty's status panel plus a checkout "popup" window. */
 .uc-status {
-  position: absolute; left: 28px; top: 28px; width: 340px;
+  width: 420px; max-width: 100%;
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-2xl);
   padding: 18px; display: flex; flex-direction: column; gap: 12px;
 }
@@ -13,7 +13,7 @@
 .uc-log code { font-size: 10px; background: var(--surface-sunk); padding: 0 4px; border-radius: 4px; }
 
 .uc-window {
-  width: 460px; max-height: calc(100vh - 48px); margin-left: 300px;
+  width: 460px; max-width: 100%; max-height: calc(100vh - 48px);
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: 14px;
   display: flex; flex-direction: column; overflow: hidden;
 }

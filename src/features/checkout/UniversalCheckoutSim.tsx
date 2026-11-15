@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, LinkButton, Swatch } from '../../components/ui';
-import { Icon } from '../../components/Icon';
 import { useApp, type StoreGroup } from '../../store/AppStore';
 import { getProduct } from '../../lib/api';
 import { money, plural } from '../../lib/format';
@@ -37,7 +36,8 @@ export function UniversalCheckoutSim({ groups, onClose }: { groups: StoreGroup[]
   const [stage, setStage] = useState<Stage>('creating');
   const [shops, setShops] = useState<Record<string, ShopStatus>>(() => Object.fromEntries(groups.map((g) => [g.store, 'waiting'])));
   const [shipping, setShipping] = useState<Record<string, string>>(() => Object.fromEntries(groups.map((g) => [g.store, 'standard'])));
-  const [log, setLog] = useState<LogEntry[]>([]);
+  // Event trail kept for debugging the real Checkout Kit wiring later.
+  const [, setLog] = useState<LogEntry[]>([]);
   const t0 = useRef(Date.now());
   const emit = (event: string, detail: string) => setLog((l) => [...l, { t: `${((Date.now() - t0.current) / 1000).toFixed(1)}s`, event, detail }]);
 
@@ -95,7 +95,7 @@ export function UniversalCheckoutSim({ groups, onClose }: { groups: StoreGroup[]
   return (
     <div className="scrim scrim--main" role="presentation">
       {/* Gifty's own status panel, behind the checkout window (what the app renders from events). */}
-      <section className="uc-status" aria-label="Checkout status" aria-live="polite">
+      {stage === 'closed' && <section className="uc-status" aria-label="Checkout status" aria-live="polite">
         <div className="row gap-8">
           <h2 className="t-15 w-700">{stage === 'closed' ? (completed.length ? 'All done' : 'Checkout not finished') : `Checking out ${plural(plan.length, 'store')} in one go`}</h2>
           <span className="spacer" />
@@ -121,13 +121,7 @@ export function UniversalCheckoutSim({ groups, onClose }: { groups: StoreGroup[]
             </div>
           </div>
         )}
-        <details className="uc-log">
-          <summary className="t-11 w-700">Checkout events ({log.length})</summary>
-          <ol className="col gap-2">
-            {log.map((e, i) => <li key={i} className="t-10"><span className="muted">{e.t}</span> <code>{e.event}</code> {e.detail}</li>)}
-          </ol>
-        </details>
-      </section>
+</section>}
 
       {stage !== 'closed' && (
         <div className="uc-window" role="dialog" aria-modal="true" aria-label="Combined checkout (simulated)">
@@ -208,7 +202,6 @@ export function UniversalCheckoutSim({ groups, onClose }: { groups: StoreGroup[]
           )}
         </div>
       )}
-      {stage === 'closed' && <button type="button" className="uc-dismiss" onClick={onClose} aria-label="Close"><Icon name="close" size={16} /></button>}
     </div>
   );
 }
