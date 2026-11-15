@@ -1,4 +1,7 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+
+// Static previews (no server-side routing) build with VITE_HASH_ROUTER=1.
+const Router = import.meta.env.VITE_HASH_ROUTER ? HashRouter : BrowserRouter;
 import { AppProvider } from './store/AppStore';
 import { AppShell } from './components/AppShell';
 import { HomePage } from './features/home/HomePage';
@@ -15,7 +18,7 @@ import { SavingsPage } from './features/cart/SavingsPage';
 export function App() {
   return (
     <AppProvider>
-      <BrowserRouter>
+      <Router>
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<HomePage />} />
@@ -33,7 +36,7 @@ export function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
-      </BrowserRouter>
+      </Router>
     </AppProvider>
   );
 }
