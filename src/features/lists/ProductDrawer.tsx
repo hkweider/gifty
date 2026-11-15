@@ -5,6 +5,7 @@ import { useApp } from '../../store/AppStore';
 import { getProduct } from '../../lib/api';
 import { money, priceOf } from '../../lib/format';
 import { reviewsFor } from '../../data/reviews';
+import { sampleReviews } from '../../data/mockReviews';
 import type { ListCtx } from './ListWorkspace';
 
 const GALLERY_SIZE = 8; // images reported by the store; first 3 shown as thumbs, then "+N"
@@ -18,7 +19,8 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
   const p = getProduct(productId);
   const who = person(ctx.personId);
   const occ = occasion(ctx.occasionId);
-  const r = p.live ? null : reviewsFor(p, who.name);
+  const r = p.live ? sampleReviews(p, who.name) : reviewsFor(p, who.name);
+  const isSample = 'sample' in r;
   const budget = occ.people.find((x) => x.personId === ctx.personId)?.budget ?? 0;
   const [variant, setVariant] = useState(p.variants?.[0]);
   const [img, setImg] = useState(0);
@@ -94,13 +96,12 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
 
           <section className="panel">
             <h3 className="t-14 w-700">Why it fits {who.name}</h3>
-            <p className="t-13 lh-15">{r ? r.why : `It came up in a catalog search based on ${who.name}'s profile (${who.summary || 'no preferences yet'}). At ${priceOf(p)} it ${p.price <= budget ? 'fits within' : 'is over'} the ${money(budget, { cents: false })} ${occ.shortName} budget.`}</p>
+            <p className="t-13 lh-15">{!p.live ? r.why : `It came up in a catalog search based on ${who.name}'s profile (${who.summary || 'no preferences yet'}). At ${priceOf(p)} it ${p.price <= budget ? 'fits within' : 'is over'} the ${money(budget, { cents: false })} ${occ.shortName} budget.`}</p>
           </section>
 
-          {p.live && <LiveDetails p={p} />}
           {r && <>
           <section className="panel" style={{ gap: 14 }}>
-            <h3 className="t-14 w-700">Reviews · from {r.sources.length > 2 ? '1,000+' : r.sources.length} sources</h3>
+            <h3 className="t-14 w-700 row gap-8">Reviews · from {isSample ? `${r.sources.length} sources` : r.sources.length > 2 ? '1,000+ sources' : `${r.sources.length} sources`}{isSample && <span className="pill" title="Consumer Reports, Trustpilot, Reddit and TikTok are not connected yet. These reviews are sample data.">Sample</span>}</h3>
             <div className="row gap-20">
               <div className="col gap-2 none" style={{ width: 150 }}>
                 <div className="row-base gap-6"><span className="display-lg">{r.rating}</span><span className="t-12 muted">out of 5</span></div>
@@ -166,7 +167,7 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
                 </div>
               ))}
             </div>
-            <LinkButton underline className="t-12 w-600" style={{ alignSelf: 'flex-start' }}>Showing {r.sources.length} of {r.sources.length > 2 ? '1,000+' : r.sources.length} sources · See all sources</LinkButton>
+            <LinkButton underline className="t-12 w-600" style={{ alignSelf: 'flex-start' }}>Showing {r.sources.length} of {isSample ? r.sources.length : r.sources.length > 2 ? '1,000+' : r.sources.length} sources · See all sources</LinkButton>
             <div className="t-11 muted">The summary is drawn from these sources. Open any source to read the original.</div>
           </section>
 
@@ -174,11 +175,13 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
             <BulletPanel title="Likes" items={r.likes} />
             <BulletPanel title="Watch for" items={r.watch} />
           </div>
+          {p.live ? <LiveDetails p={p} /> : (
           <section className="panel panel--sm" style={{ gap: 0 }}>
             <h3 className="t-13 w-700" style={{ marginBottom: 8 }}>Buying considerations</h3>
             <p className="t-12" style={{ lineHeight: 1.45 }}>{r.buying}</p>
             <div className="t-11" style={{ marginTop: 6 }}>{r.buyingMeta}</div>
           </section>
+          )}
           {r.gaps && (
             <section className="panel panel--sm" style={{ borderStyle: 'dashed', borderColor: 'var(--line-dashed)', gap: 0 }}>
               <h3 className="t-13 w-700">Gaps</h3>
@@ -256,21 +259,6 @@ function LiveDetails({ p }: { p: import('../../data/types').Product }) {
   const live = p.live!;
   return (
     <>
-      <section className="panel" style={{ gap: 10 }}>
-        <h3 className="t-14 w-700">Reviews</h3>
-        {p.customer ? (
-          <div className="row gap-14">
-            <span className="display-lg">{p.customer.rating.toFixed(1)}</span>
-            <div className="col gap-2">
-              <span className="t-14" aria-label={`${p.customer.rating} out of 5 stars`}>
-                <span className="stars">{'★'.repeat(Math.round(p.customer.rating))}</span>
-                <span className="stars--off">{'★'.repeat(5 - Math.round(p.customer.rating))}</span>
-              </span>
-              <span className="t-11 muted">{p.customer.count} ratings · from the Shopify catalog</span>
-            </div>
-          </div>
-        ) : <p className="t-12 muted">No ratings found for this product yet.</p>}
-      </section>
       {(live.description || live.features.length > 0) && (
         <section className="panel panel--sm" style={{ gap: 8 }}>
           <h3 className="t-13 w-700">About this product</h3>

@@ -81,6 +81,7 @@ function toProduct(d: LiveProductDto, type: ProductTypeId): Product {
     id: d.id, name: d.name, store: d.store, price: d.price, listPrice: d.listPrice, currency: d.currency,
     blurb: d.blurb, type: existing?.type ?? type, tint: tintFor(d.id),
     customer: d.rating ? { rating: d.rating.value, count: compact(d.rating.count) } : undefined,
+    sampleReviews: true,
     arrives: 'Confirmed at checkout',
     variants: d.variants.length > 1 ? d.variants.filter((v) => v.available).map((v) => v.title).slice(0, 4) : undefined,
     image: d.image,

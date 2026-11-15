@@ -1,6 +1,7 @@
 import type { Product } from '../../data/types';
 import { priceOf } from '../../lib/format';
 import { LIMITED_REVIEWS } from '../../lib/api';
+import { sampleReviews } from '../../data/mockReviews';
 
 export interface CardProps {
   product: Product;
@@ -16,7 +17,8 @@ export interface CardProps {
 
 /** Product result card (boards 04, 04d, 04g, 05c, 05d). Cards in a row share equal height. */
 export function ProductCard({ product: p, shortlisted, compared, compareDisabled, limited, demo, onOpen, onToggleShortlist, onToggleCompare }: CardProps) {
-  const isLimited = limited ?? LIMITED_REVIEWS.has(p.id);
+  const sample = p.sampleReviews ? sampleReviews(p, '') : null;
+  const isLimited = sample ? false : limited ?? LIMITED_REVIEWS.has(p.id);
   return (
     <article className={`pcard${shortlisted ? ' is-shortlisted' : ''}${demo ? ' is-demo' : ''}`}>
       <button type="button" className="pcard__img" style={{ background: `var(--${p.tint})` }} onClick={onOpen} aria-label={`View ${p.name}`}>
@@ -43,6 +45,8 @@ export function ProductCard({ product: p, shortlisted, compared, compareDisabled
                 </>
               ) : (
                 <>
+                  {sample && <div className="row gap-4" title="Sample data: review sources are not connected yet"><span className="t-11 w-700">Expert reviews</span><span className="t-10 muted">sample</span><span className="spacer" /><span className="t-11">{sample.expertScore.toFixed(1)} · {sample.expertSources} sources</span></div>}
+                  {sample && !p.customer && <div className="row gap-4"><span className="t-11 w-700">Customer reviews</span><span className="t-10 muted">sample</span><span className="spacer" /><span className="t-11">{sample.rating.toFixed(1)} · {sample.ratings.split(' ')[0]}</span></div>}
                   {p.expert && <div className="row gap-4"><span className="t-11 w-700">Expert reviews</span><span className="spacer" /><span className="t-11">{p.expert.score.toFixed(1)} · {p.expert.sources} sources</span></div>}
                   {p.customer && <div className="row gap-4"><span className="t-11 w-700">Customer reviews</span><span className="spacer" /><span className="t-11">{p.customer.rating.toFixed(1)} · {p.customer.count}</span></div>}
                 </>

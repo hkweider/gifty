@@ -82,6 +82,8 @@ export interface Product {
   /** ISO currency code; sample data is CAD. */
   currency?: string;
   live?: LiveInfo;
+  /** Expert/social reviews are sample data (sources not connected yet). */
+  sampleReviews?: boolean;
 }
 
 export type ShortlistStatus = 'Selected' | 'Considering';
