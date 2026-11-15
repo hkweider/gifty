@@ -1,0 +1,9 @@
+.settings { display: flex; min-height: 100vh; }
+.settings__nav { width: 190px; flex: none; background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-self: flex-start; }
+.settings__nav a { padding: 9px 14px; font-size: 13px; }
+.settings__nav a.is-active { background: var(--surface-sunk); font-weight: 700; }
+.settings__nav a:hover { background: var(--canvas); }
+.settings__body { flex: 1; min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; max-width: 1100px; }
+.set-card { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.set-grid { display: grid; grid-template-columns: 90px 110px 110px 1fr 40px; gap: 10px; align-items: center; }
+.set-grid--head { font-size: 11px; font-weight: 700; }

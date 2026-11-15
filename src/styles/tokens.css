@@ -1,0 +1,61 @@
+/* Gifty design tokens — Direction B (soft pastel workspace).
+   Source of truth: "Styled wireframes (Direction B)" boards. Do not add colours outside this palette. */
+:root {
+  /* Surfaces */
+  --canvas: #FAF9F7;        /* page background */
+  --surface: #FFFFFF;       /* cards, sidebar */
+  --surface-sunk: #EFEBE5;  /* tracks, skeletons, neutral pills */
+  --surface-hover: #F1EEE9; /* row hover / highlighted menu item */
+
+  /* Text */
+  --ink: #23211F;
+  --muted: #66615B;
+  --faint: #8F887E;
+
+  /* Buttons / selection */
+  --button: #2B2623;
+  --on-button: #FFFFFF;
+
+  /* Lines (1px only, no shadows) */
+  --line: #E8E4DE;          /* card borders, dividers */
+  --line-strong: #CFC9C0;   /* outlines: inputs, outline buttons */
+  --line-chip: #D8D2C8;     /* chips, tick marks */
+  --line-dashed: #CFC8BE;
+
+  /* Pastel tints */
+  --peach: #F8D3C2;
+  --butter: #F6E6A5;
+  --blush: #F4D2DE;
+  --sky: #CFE0F5;
+  --sage: #D4E6D2;
+
+  /* Accent */
+  --accent: #8DB2EA;        /* links, progress, "in cart" */
+  --accent-tint: #EAF1FB;   /* selection, cart widget */
+
+  /* Timeline / rating markers */
+  --marker-gold: #F0C75E;
+  --marker-rose: #E48AA8;
+  --star: #E8A93A;
+
+  /* Overlay */
+  --scrim: rgba(35, 33, 31, 0.36);
+
+  /* Type */
+  --font-serif: 'Newsreader', Georgia, serif;
+  --font-sans: 'Figtree', system-ui, sans-serif;
+
+  /* Radii */
+  --r-xs: 8px;
+  --r-sm: 10px;
+  --r-md: 12px;
+  --r-lg: 14px;
+  --r-xl: 16px;
+  --r-2xl: 20px;
+  --r-pill: 99px;
+
+  /* Layout */
+  --sidebar-w: 220px;
+  --logo-h: 30px;           /* same height wherever the logo appears */
+  --page-pad: 24px;
+}

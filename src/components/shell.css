@@ -1,0 +1,68 @@
+.shell { display: flex; min-height: 100vh; min-width: 1100px; }
+.shell__main { flex: 1; min-width: 0; position: relative; }
+
+.logo { height: var(--logo-h); width: auto; display: block; }
+
+.sidebar {
+  position: sticky; top: 0; height: 100vh; flex: none;
+  width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+.sidebar__logo { padding: 20px 16px; display: block; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; margin: 0 10px; border-radius: var(--r-md);
+  font-size: 13px; color: var(--ink);
+}
+.nav-item:hover { background: var(--canvas); }
+.nav-item.is-active { background: var(--button); color: var(--on-button); font-weight: 700; }
+.nav-item.is-active:hover { background: var(--button); }
+
+.tree { display: flex; flex-direction: column; padding: 2px 0 2px; }
+.tree__occ {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 6px 24px 6px 30px; border: 0; background: none; text-align: left;
+}
+.tree__person {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 10px; padding: 4px 14px 4px 48px; border-radius: var(--r-sm);
+  min-height: 30px;
+}
+.tree__person:hover { background: var(--canvas); }
+.tree__person.is-active { background: var(--accent-tint); }
+.tree__add {
+  border: 0; background: none; text-align: left;
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  padding: 4px 14px 6px 52px;
+}
+.tree__add--occ { padding: 6px 14px 6px 30px; }
+
+.cart-widget {
+  margin: 10px 12px; padding: 12px; border-radius: var(--r-xl);
+  background: var(--accent-tint);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.cart-widget__icon {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--surface);
+  display: flex; align-items: center; justify-content: center; flex: none;
+}
+.cart-widget__thumbs { display: flex; }
+.cart-widget__thumb {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--line-strong);
+  box-shadow: 0 0 0 2px var(--accent-tint); /* ring separating overlapped thumbs, not a drop shadow */
+}
+.cart-widget__thumb + .cart-widget__thumb { margin-left: -5px; }
+.cart-widget__total { font-family: var(--font-serif); font-size: 16px; font-weight: 700; white-space: nowrap; }
+
+.account {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 10px 14px; border: 0; border-top: 1px solid var(--line); background: none; text-align: left;
+}
+
+.page { padding: var(--page-pad); display: flex; flex-direction: column; gap: 20px; max-width: 1280px; }
+.page--wide { max-width: none; }
+.page-head { display: flex; align-items: center; gap: 10px; }
+.breadcrumb { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+.breadcrumb a, .breadcrumb strong { font-weight: 700; }
