@@ -114,10 +114,10 @@ export function CartPage({ saved: savedView }: { saved?: boolean }) {
           <span className="t-11">{plural(s.count, 'item')} · Order total</span>
           <span className="t-16 w-700">{money(s.total)}</span>
           {listSavings > 0 && <span className="pill">You save {money(listSavings)}</span>}
-          <Button variant="primary" size="lg" onClick={() => setParam('checkout', s.groups.length > 1 ? 'all' : '1')}>
+          <Button variant="primary" size="lg" onClick={() => setParam('checkout', 'all')}>
             {s.groups.length > 1 ? `Check out all (${plural(s.count, 'item')})` : `Check out (${plural(s.count, 'item')})`}
           </Button>
-          {s.groups.length > 1 && <Button size="lg" onClick={() => setParam('checkout', '1')}>Store by store</Button>}
+          <Button size="lg" onClick={() => setParam('checkout', '1')}>{s.groups.length > 1 ? 'Store by store' : 'Check out on store site'}</Button>
         </div>
       )}
 

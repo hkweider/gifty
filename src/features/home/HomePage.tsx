@@ -71,7 +71,7 @@ export function HomePage() {
           <div className="t-12 w-500 dim">Order total</div>
           <div className="home__total-amount">{plain(s.total, { cents: true })}</div>
           <div className="t-11 dim">incl. shipping and tax</div>
-          <Button variant="primary" className="home__checkout" disabled={!s.count} onClick={() => navigate('/cart?checkout=1')}>
+          <Button variant="primary" className="home__checkout" disabled={!s.count} onClick={() => navigate('/cart?checkout=all')}>
             Check out ({plural(s.count, 'gift')})
           </Button>
         </section>

@@ -56,7 +56,7 @@ export function CheckoutModal({ groups, onClose }: { groups: StoreGroup[]; onClo
         <p className="t-12">Each store takes payment on its own checkout page. We will open them one at a time.</p>
         {plan.map((g, i) => (
           <div key={g.store} className="row gap-12">
-            <Swatch tint={TINTS[i % 3]} size={44} />
+            <Swatch tint={TINTS[i % 3]} size={44} image={getProduct(g.items[0].productId).image} alt="" />
             <div className="flex1 col">
               <span className="t-13 w-700">Step {g.step} · {g.store}</span>
               <span className="t-11">{plural(g.items.length, 'item')} · arrives {arrives(g)}</span>
@@ -83,7 +83,7 @@ export function CheckoutModal({ groups, onClose }: { groups: StoreGroup[]; onClo
         )}
         {(!g.storeDomain || (handoff.step === phase.step && handoff.url)) && <p className="t-12">{g.store} checkout opened in a new tab. Finish your payment there, then come back.</p>}
         <div className="row gap-12">
-          <Swatch tint={TINTS[phase.step % 3]} size={44} />
+          <Swatch tint={TINTS[phase.step % 3]} size={44} image={getProduct(g.items[0].productId).image} alt="" />
           <div className="flex1 col">
             <span className="t-13 w-700">{plural(g.items.length, 'item')}</span>
             <span className="t-11">{g.items.map((i) => getProduct(i.productId).name).join(', ')}</span>

@@ -97,7 +97,7 @@ export function UniversalCheckoutSim({ groups, onClose }: { groups: StoreGroup[]
       {/* Gifty's own status panel, behind the checkout window (what the app renders from events). */}
       {stage === 'closed' && <section className="uc-status" aria-label="Checkout status" aria-live="polite">
         <div className="row gap-8">
-          <h2 className="t-15 w-700">{stage === 'closed' ? (completed.length ? 'All done' : 'Checkout not finished') : `Checking out ${plural(plan.length, 'store')} in one go`}</h2>
+          <h2 className="t-15 w-700">{stage === 'closed' ? (completed.length ? 'All done' : 'Checkout not finished') : 'Checking out'}</h2>
           <span className="spacer" />
           <span className="pill">Simulated</span>
         </div>
@@ -136,7 +136,7 @@ export function UniversalCheckoutSim({ groups, onClose }: { groups: StoreGroup[]
           {stage === 'signin' && (
             <div className="uc-body uc-center col gap-12">
               <div className="uc-brand">Shop Pay</div>
-              <p className="t-13">Sign in to check out with {plural(plan.length, 'store')} at once.</p>
+              <p className="t-13">{plan.length > 1 ? `Sign in to check out with ${plural(plan.length, 'store')} at once.` : `Sign in to check out with ${plan[0]?.store}.`}</p>
               <div className="card col gap-4" style={{ padding: 12, width: '100%', borderRadius: 12 }}>
                 <span className="t-11 muted">Signed in on this device as</span>
                 <span className="t-13 w-700">{USER.name}</span>
