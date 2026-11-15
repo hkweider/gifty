@@ -209,7 +209,9 @@ export function FindGifts({ ctx }: { ctx: ListCtx }) {
       </>
     );
   } else if (listEmpty && !params.get('view') && state !== 'limited') {
-    body = <StartView ctx={ctx} onType={(id) => set({ type: id })} />;
+    body = LIVE
+      ? <LiveStart ctx={ctx} maxPrice={maxBudget} intent={intent} onSearch={(query) => set({ q: query })} />
+      : <StartView ctx={ctx} onType={(id) => set({ type: id })} />;
   } else {
     // Grouped ideas: by the person's interests (live) or by sample product type.
     const groups = LIVE
@@ -424,5 +426,71 @@ function SearchBox({ personName, initial, onSearch, onType, onProduct }: {
         </div>
       )}
     </div>
+  );
+}
+
+/** Live start view: categories built from the person's interests, each with a real product photo. */
+function LiveStart({ ctx, maxPrice, intent, onSearch }: { ctx: ListCtx; maxPrice: number; intent: string; onSearch: (q: string) => void }) {
+  const { person } = useApp();
+  const p = person(ctx.personId);
+  const who = p.relationship === 'Parent' ? (p.pronoun === 'she' ? 'mom' : p.pronoun === 'he' ? 'dad' : 'parent') : p.relationship.toLowerCase();
+  const fromInterests = p.interests.flatMap((i) => [
+    { label: `${i} gifts`, query: `${i} gift` },
+    { label: `${i} essentials`, query: `${i} tools accessories` },
+  ]);
+  const general = [
+    { label: 'Gift sets', query: `gift set for ${who}` },
+    { label: 'Home & kitchen', query: 'home kitchen gift' },
+    { label: 'Books', query: `${p.interests[0] ?? 'gift'} book` },
+    { label: 'Experiences', query: `${p.interests[0] ?? ''} class experience gift` },
+    { label: 'Self-care', query: 'self care gift set' },
+  ];
+  const tiles = [...fromInterests, ...general].slice(0, 8);
+  const ideas = [...p.interests.slice(0, 3).map((i) => ({ label: `${i} gift for ${who}`, query: `${i} gift for ${who}` }))];
+  return (
+    <>
+      <h2 className="t-14 w-700">Start with a product type</h2>
+      <div className="grid-4" style={{ gap: 10 }}>
+        {tiles.map((t) => <LiveTile key={t.label} label={t.label} query={t.query} maxPrice={maxPrice} intent={intent} who={p.name} onOpen={() => onSearch(t.query)} />)}
+      </div>
+      {ideas.length > 0 && (
+        <section className="card card--dashed col gap-6" style={{ padding: 14, borderColor: 'var(--peach)' }}>
+          <h2 className="t-14 w-700">Ideas based on what we know about {p.name}</h2>
+          <div className="t-11">{p.summary || 'Add interests to get ideas'}</div>
+          <div className="row gap-10" style={{ marginTop: 4 }}>
+            {ideas.map((i) => <LiveIdea key={i.label} label={i.label} query={i.query} maxPrice={maxPrice} intent={intent} onOpen={() => onSearch(i.query)} />)}
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
+function LiveTile({ label, query, maxPrice, intent, who, onOpen }: { label: string; query: string; maxPrice: number; intent: string; who: string; onOpen: () => void }) {
+  const res = useCatalog({ query, type: 'giftsets', maxPrice, intent, limit: 6 });
+  const pick = res.products.find((x) => x.image);
+  const sub = res.status === 'loading' ? 'Searching…' : res.status === 'error' ? 'Unavailable right now' : res.products.length ? `${plural(res.products.length, 'idea')} for ${who}` : 'No ideas in budget';
+  return (
+    <button type="button" className="type-tile" onClick={onOpen}>
+      <span className="type-tile__img" style={{ background: pick ? `url("${pick.image}") center/cover, var(--${pick.tint})` : 'var(--surface-sunk)' }} />
+      <span className="type-tile__body">
+        <span className="t-13 w-700">{label}</span>
+        <span className="t-11">{sub}</span>
+      </span>
+    </button>
+  );
+}
+
+function LiveIdea({ label, query, maxPrice, intent, onOpen }: { label: string; query: string; maxPrice: number; intent: string; onOpen: () => void }) {
+  const res = useCatalog({ query, type: 'giftsets', maxPrice, intent, limit: 6 });
+  const top = res.products[0];
+  return (
+    <button type="button" className="idea" onClick={onOpen}>
+      <Swatch tint={top?.tint ?? 'blush'} size={34} radius={99} image={top?.image} />
+      <span className="col min0">
+        <span className="t-12 w-700">{label}</span>
+        <span className="t-10" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{top ? `e.g. ${top.name}` : res.status === 'loading' ? 'Searching…' : 'Search the catalog'}</span>
+      </span>
+    </button>
   );
 }
