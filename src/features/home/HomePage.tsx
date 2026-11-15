@@ -48,7 +48,7 @@ export function HomePage() {
             const per = occasions.find((o) => o.id === c.occasionId)!;
             return (
               <div key={c.id} className="home__cart-row">
-                <Swatch tint={p.tint} size={44} />
+                <Swatch tint={p.tint} size={44} image={p.live ? p.image : undefined} alt="" />
                 <div className="flex1">
                   <div className="t-13 w-600">{p.name}</div>
                   <div className="t-11 muted">from {p.store}</div>

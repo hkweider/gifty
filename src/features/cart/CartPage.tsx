@@ -169,7 +169,7 @@ function StoreCard({ g, total, issue, onDeals, onMessage }: { g: StoreGroup; tot
         const why = changed ? 'Price up from CA$ 45.00 since you added it' : i.why;
         return (
           <div key={i.id} className={`cart-item${changed ? ' is-flagged' : ''}`}>
-            <Swatch tint={p.tint} size={56} />
+            <Swatch tint={p.tint} size={56} image={p.live ? p.image : undefined} alt="" />
             <div className="flex1 col gap-4" style={{ position: 'relative' }}>
               <div className="row gap-10">
                 <span className="t-15 w-600">{p.name}</span>
@@ -298,7 +298,7 @@ function SavedList() {
           const p = getProduct(s.productId);
           return (
             <div key={s.id} className="row gap-12" style={{ alignItems: 'flex-start' }}>
-              <Swatch tint={p.tint} size={56} />
+              <Swatch tint={p.tint} size={56} image={p.live ? p.image : undefined} alt="" />
               <div className="flex1 col gap-4">
                 <span className="t-15 w-600">{p.name}</span>
                 <span className="pill pill--dark">for {person(s.personId).name} · {occasion(s.occasionId).name}</span>

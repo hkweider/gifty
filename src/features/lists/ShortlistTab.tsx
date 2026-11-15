@@ -75,7 +75,7 @@ export function ShortlistTab({ ctx }: { ctx: ListCtx }) {
               return (
                 <div key={s.productId} className={`sl-row${menuFor === s.productId ? ' is-active' : ''}`}>
                   <input type="checkbox" aria-label={`Select ${p.name}`} checked={checked.includes(s.productId)} onChange={() => toggle(s.productId)} />
-                  <Swatch tint={p.tint} size={46} />
+                  <Swatch tint={p.tint} size={46} image={p.live ? p.image : undefined} alt="" />
                   <button type="button" className="flex1 col" style={{ border: 0, background: 'none', padding: 0, textAlign: 'left' }} onClick={() => ctx.openProduct(s.productId, items.map((x) => x.productId))}>
                     <span className="t-13 w-700">{p.name}{s.variant ? ` · ${s.variant}` : ''}</span>
                     <span className="t-11">{p.store} · {getType(p.type).name}</span>
