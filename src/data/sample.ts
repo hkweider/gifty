@@ -55,12 +55,12 @@ export const occasions: Occasion[] = [
 ];
 
 export const productTypes: ProductType[] = [
-  { id: 'brewing', name: 'Brewing gear', tint: 'sky', narrow: ['Pour-over', 'Espresso', 'Cold brew'] },
-  { id: 'giftsets', name: 'Gift sets', tint: 'blush', narrow: ['Tea', 'Chocolate', 'Snacks'] },
-  { id: 'accessories', name: 'Accessories', tint: 'sage', narrow: ['Cleaning', 'Scoops', 'Mugs'] },
-  { id: 'beans', name: 'Beans & tea', tint: 'peach', narrow: [] },
-  { id: 'books', name: 'Books', tint: 'butter', narrow: [] },
-  { id: 'experiences', name: 'Experiences', tint: 'sky', narrow: [] },
+  { id: 'brewing', name: 'Brewing gear', tint: 'sky', narrow: ['Pour-over', 'Espresso', 'Cold brew'], query: 'pour over coffee brewing gear' },
+  { id: 'giftsets', name: 'Gift sets', tint: 'blush', narrow: ['Tea', 'Chocolate', 'Snacks'], query: 'gourmet gift set' },
+  { id: 'accessories', name: 'Accessories', tint: 'sage', narrow: ['Cleaning', 'Scoops', 'Mugs'], query: 'coffee accessories' },
+  { id: 'beans', name: 'Beans & tea', tint: 'peach', narrow: [], query: 'specialty coffee beans and tea' },
+  { id: 'books', name: 'Books', tint: 'butter', narrow: [], query: 'coffee table book' },
+  { id: 'experiences', name: 'Experiences', tint: 'sky', narrow: [], query: 'coffee tasting experience gift' },
 ];
 
 /** Idea counts per type for Dad (catalogue sizes, not all loaded in sample). */

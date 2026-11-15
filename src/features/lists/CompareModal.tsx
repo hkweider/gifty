@@ -3,7 +3,7 @@ import { Button, CloseButton, LinkButton, Modal } from '../../components/ui';
 import { useApp } from '../../store/AppStore';
 import { getProduct } from '../../lib/api';
 import { compareRows } from '../../data/reviews';
-import { money } from '../../lib/format';
+import { priceOf } from '../../lib/format';
 import type { ListCtx } from './ListWorkspace';
 
 const ROWS: { key: string; label: (name: string) => string }[] = [
@@ -29,10 +29,10 @@ export function CompareModal({ ctx, ids, onClose }: { ctx: ListCtx; ids: string[
     switch (key) {
       case 'why': return p.blurb;
       case 'durability': return 'No durability testing found';
-      case 'reviews': return `${p.customer?.rating ?? '—'} from ${p.customer?.count ?? '—'} buyers and ${p.expert?.sources ?? 0} sources`;
-      case 'procon': return 'Pro: well reviewed. Con: limited detail';
-      case 'price': return `${money(p.price)} before tax and shipping`;
-      default: return `${p.store} · 30-day returns · ${p.arrives}`;
+      case 'reviews': return p.customer ? `${p.customer.rating.toFixed(1)} from ${p.customer.count} ratings${p.expert ? ` and ${p.expert.sources} sources` : ''}` : 'No ratings found';
+      case 'procon': return '—';
+      case 'price': return `${priceOf(p)} before tax and shipping`;
+      default: return p.live ? `${p.store} · returns per store policy · delivery at checkout` : `${p.store} · 30-day returns · ${p.arrives}`;
     }
   };
   const biggest = items.length === 3 && ids.includes('kettle') && ids.includes('dripper') && ids.includes('tea')

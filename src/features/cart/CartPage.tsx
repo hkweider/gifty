@@ -85,7 +85,7 @@ export function CartPage({ saved: savedView }: { saved?: boolean }) {
             <div className="col gap-6">
               <div className="kv"><span>Items</span><span>{money(s.items)}</span></div>
               <div className="kv"><span>Discounts</span><span>{money(-s.discounts)}</span></div>
-              <div className="kv"><span>Shipping &amp; tax</span><span>{money(s.shippingTax)}</span></div>
+              <div className="kv"><span>Shipping &amp; tax</span><span>{money(s.shippingTax)}{s.atCheckout ? ' + at checkout' : ''}</span></div>
               <hr className="divider" style={{ margin: '4px 0' }} />
               <div className="kv w-700"><span>Total</span><span>{money(s.total)}</span></div>
               {listSavings > 0 && <div className="save-pill">You save {money(listSavings)} vs list price</div>}
@@ -153,7 +153,7 @@ function StoreCard({ g, total, issue, onDeals, onMessage }: { g: StoreGroup; tot
   const st = stores[g.store];
   const allOut = g.items.every((i) => i.unavailable);
   const late = issue === 'delivery-miss' && g.store === 'Hartwell Home';
-  const shipLine = allOut ? 'Nothing to ship from this store right now' : late ? 'Arrives Dec 26 (standard) · Express arrives Dec 22 for +CA$ 14.00' : `${st?.shippingNote ?? ''} · ${st?.orderBy ?? ''}`;
+  const shipLine = allOut ? 'Nothing to ship from this store right now' : g.atCheckout ? `Shipping options and delivery dates are confirmed at ${g.store} checkout` : late ? 'Arrives Dec 26 (standard) · Express arrives Dec 22 for +CA$ 14.00' : `${st?.shippingNote ?? ''} · ${st?.orderBy ?? ''}`;
   return (
     <section className="card store-card" aria-label={g.store}>
       <div className="row gap-10">
@@ -190,8 +190,8 @@ function StoreCard({ g, total, issue, onDeals, onMessage }: { g: StoreGroup; tot
               ) : (
                 <>
                   <div className="row-base gap-8">
-                    {i.listPrice > i.price && <span className="t-12 muted strike">{money(i.listPrice)}</span>}
-                    <span className="t-15 w-700">{money(i.price)}</span>
+                    {i.listPrice > i.price && <span className="t-12 muted strike">{money(i.listPrice, { currency: p.currency })}</span>}
+                    <span className="t-15 w-700">{money(i.price, { currency: p.currency })}</span>
                     {i.listPrice > i.price && <span className="pill pill--outline" style={{ padding: '1px 7px', fontSize: 10, fontWeight: 600 }}>Sale −{Math.round((1 - i.price / i.listPrice) * 100)}%</span>}
                   </div>
                   <button type="button" className="link-btn t-11" style={{ alignSelf: 'flex-start' }} onClick={() => onMessage(i.id)}>
@@ -227,7 +227,7 @@ function StoreCard({ g, total, issue, onDeals, onMessage }: { g: StoreGroup; tot
       <hr className="divider" />
       <div className="col gap-4">
         {g.discounts > 0 && <div className="kv"><span>Discounts</span><span>{money(-g.discounts)}</span></div>}
-        <div className="kv"><span>Shipping &amp; tax</span><span>{money(g.shippingTax)}</span></div>
+        <div className="kv"><span>Shipping &amp; tax</span><span>{g.atCheckout ? 'At checkout' : money(g.shippingTax)}</span></div>
       </div>
       <hr className="divider" />
       <div className="col gap-2">

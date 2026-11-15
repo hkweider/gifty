@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Chip, CloseButton } from '../../components/ui';
 import { useApp } from '../../store/AppStore';
-import { productsByType, searchProducts } from '../../lib/api';
+import { LIVE, productsByType, searchProducts } from '../../lib/api';
 import type { ProductTypeId } from '../../data/types';
 import type { ListCtx } from './ListWorkspace';
 
@@ -37,8 +37,9 @@ export function AskRail({ ctx, onClose }: { ctx: ListCtx; onClose: () => void })
       const after = before.filter((x) => x.price <= max);
       const removed = before.length - after.length;
       next.set('max', String(max));
-      next.set('changed', `Budget ≤ $${max} · ${removed} removed · ${after.length} re-ranked`);
-      replies.push({ from: 'them', text: `Got it. I narrowed to everyday ${params.get('type') ? 'brewing gear ' : 'ideas '}under CA$ ${max}, ranked durable options first.`, meta: `${removed} removed · ${after.length} re-ranked` });
+      // Live results are re-fetched with the new budget, so counts are only known for sample data.
+      next.set('changed', LIVE ? `Budget ≤ $${max}` : `Budget ≤ $${max} · ${removed} removed · ${after.length} re-ranked`);
+      replies.push({ from: 'them', text: `Got it. I narrowed to ${params.get('type') ? 'this type ' : 'ideas '}under CA$ ${max}${LIVE ? '' : ', ranked durable options first'}.`, meta: LIVE ? undefined : `${removed} removed · ${after.length} re-ranked` });
       replies.push({ from: 'them', text: `Want me to skip anything ${p.pronoun === 'she' ? 'she' : p.pronoun === 'he' ? 'he' : 'they'} already ${p.pronoun === 'they' ? 'own' : 'owns'}?` });
     } else if (skip) {
       const id = skip[1].toLowerCase().startsWith('kettle') ? 'kettle' : skip[1].toLowerCase().startsWith('scale') ? 'scale' : 'dripper';

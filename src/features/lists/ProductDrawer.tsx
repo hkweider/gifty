@@ -3,7 +3,7 @@ import { Button, LinkButton } from '../../components/ui';
 import { Icon } from '../../components/Icon';
 import { useApp } from '../../store/AppStore';
 import { getProduct } from '../../lib/api';
-import { money } from '../../lib/format';
+import { money, priceOf } from '../../lib/format';
 import { reviewsFor } from '../../data/reviews';
 import type { ListCtx } from './ListWorkspace';
 
@@ -18,7 +18,8 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
   const p = getProduct(productId);
   const who = person(ctx.personId);
   const occ = occasion(ctx.occasionId);
-  const r = reviewsFor(p, who.name);
+  const r = p.live ? null : reviewsFor(p, who.name);
+  const budget = occ.people.find((x) => x.personId === ctx.personId)?.budget ?? 0;
   const [variant, setVariant] = useState(p.variants?.[0]);
   const [img, setImg] = useState(0);
   useEffect(() => { setVariant(p.variants?.[0]); setImg(0); }, [p]);
@@ -50,6 +51,7 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
 
         <div className="drawer__body">
           <div className="row gap-14">
+            {p.live ? <LiveGallery images={p.live.images} name={p.name} tint={p.tint} /> : (
             <div className="gallery">
               <div className="gallery__main">
                 {p.image
@@ -67,15 +69,16 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
                 </div>
               )}
             </div>
+            )}
             <div className="col gap-6 min0">
               <h2 className="t-18 w-700">{p.name}</h2>
-              <div className="t-12 muted">{p.maker ? `by ${p.maker} · ${p.blurb.replace('Gooseneck spout, ', '').replace(', ', ' · ')}` : p.blurb}</div>
+              {!p.live && <div className="t-12 muted">{p.maker ? `by ${p.maker} · ${p.blurb.replace('Gooseneck spout, ', '').replace(', ', ' · ')}` : p.blurb}</div>}
               <div className="row-base gap-8">
-                <span className="t-16 w-700 nowrap">{money(p.price)}</span>
-                {p.listPrice && <span className="t-12 muted strike nowrap">{money(p.listPrice)}</span>}
+                <span className="t-16 w-700 nowrap">{priceOf(p)}</span>
+                {p.listPrice && <span className="t-12 muted strike nowrap">{priceOf(p, p.listPrice)}</span>}
                 {salePct > 0 && <span className="pill">Sale −{salePct}%</span>}
               </div>
-              <div className="t-11 muted">Sold by {p.store} · Arrives {p.arrives} · checked 14 min ago</div>
+              <div className="t-11 muted">{p.live ? `Sold by ${p.store} · ships to Canada · price checked just now` : `Sold by ${p.store} · Arrives ${p.arrives} · checked 14 min ago`}</div>
               {p.variants && (
                 <div className="row gap-6">
                   {p.variants.map((v) => (
@@ -91,9 +94,11 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
 
           <section className="panel">
             <h3 className="t-14 w-700">Why it fits {who.name}</h3>
-            <p className="t-13 lh-15">{r.why}</p>
+            <p className="t-13 lh-15">{r ? r.why : `It came up in a catalog search based on ${who.name}'s profile (${who.summary || 'no preferences yet'}). At ${priceOf(p)} it ${p.price <= budget ? 'fits within' : 'is over'} the ${money(budget, { cents: false })} ${occ.shortName} budget.`}</p>
           </section>
 
+          {p.live && <LiveDetails p={p} />}
+          {r && <>
           <section className="panel" style={{ gap: 14 }}>
             <h3 className="t-14 w-700">Reviews · from {r.sources.length > 2 ? '1,000+' : r.sources.length} sources</h3>
             <div className="row gap-20">
@@ -180,6 +185,7 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
               <p className="t-12">{r.gaps}</p>
             </section>
           )}
+          </>}
           <form className="row gap-6" onSubmit={(e) => e.preventDefault()}>
             <input className="input" placeholder="Ask about this product…" aria-label="Ask about this product" />
             <Button type="submit">Ask</Button>
@@ -223,4 +229,67 @@ function BulletPanel({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+function LiveGallery({ images, name, tint }: { images: string[]; name: string; tint: string }) {
+  const [i, setI] = useState(0);
+  useEffect(() => setI(0), [images]);
+  return (
+    <div className="gallery">
+      <div className="gallery__main">
+        {images.length ? <img src={images[i]} alt={name} /> : <span className="gallery__ph" style={{ background: `var(--${tint})` }} />}
+        {images.length > 0 && <span className="gallery__count">{i + 1} / {images.length}</span>}
+      </div>
+      {images.length > 1 && (
+        <div className="row gap-4">
+          {images.slice(0, images.length > 4 ? 3 : 4).map((src, n) => (
+            <button key={src} type="button" className="gallery__thumb" aria-current={i === n} aria-label={`Image ${n + 1}`}
+              style={{ background: `url(${src}) center/cover` }} onClick={() => setI(n)} />
+          ))}
+          {images.length > 4 && <button type="button" className="gallery__thumb gallery__more" onClick={() => setI(3)} aria-label={`${images.length - 3} more images`}>+{images.length - 3}</button>}
+        </div>
+      )}
+    </div>
+  );
+}
 
+/** Live catalog product: store ratings, description and buying details. No made-up review text. */
+function LiveDetails({ p }: { p: import('../../data/types').Product }) {
+  const live = p.live!;
+  return (
+    <>
+      <section className="panel" style={{ gap: 10 }}>
+        <h3 className="t-14 w-700">Reviews</h3>
+        {p.customer ? (
+          <div className="row gap-14">
+            <span className="display-lg">{p.customer.rating.toFixed(1)}</span>
+            <div className="col gap-2">
+              <span className="t-14" aria-label={`${p.customer.rating} out of 5 stars`}>
+                <span className="stars">{'★'.repeat(Math.round(p.customer.rating))}</span>
+                <span className="stars--off">{'★'.repeat(5 - Math.round(p.customer.rating))}</span>
+              </span>
+              <span className="t-11 muted">{p.customer.count} ratings · from the Shopify catalog</span>
+            </div>
+          </div>
+        ) : <p className="t-12 muted">No ratings found for this product yet.</p>}
+      </section>
+      {(live.description || live.features.length > 0) && (
+        <section className="panel panel--sm" style={{ gap: 8 }}>
+          <h3 className="t-13 w-700">About this product</h3>
+          {live.description && <p className="t-12" style={{ lineHeight: 1.5 }}>{live.description.length > 700 ? `${live.description.slice(0, 700).trimEnd()}…` : live.description}</p>}
+          {live.features.length > 0 && (
+            <ul className="col gap-4">
+              {live.features.map((f) => <li key={f} className="t-12 row gap-6" style={{ alignItems: 'flex-start' }}><span className="muted">•</span><span>{f}</span></li>)}
+            </ul>
+          )}
+        </section>
+      )}
+      <section className="panel panel--sm" style={{ gap: 6 }}>
+        <h3 className="t-13 w-700">Buying considerations</h3>
+        <p className="t-12" style={{ lineHeight: 1.45 }}>Sold and shipped by {p.store}. Shipping, tax and delivery dates are confirmed at the store's checkout.</p>
+        <div className="row gap-14 t-11">
+          {live.url && <a className="underline" href={live.url} target="_blank" rel="noreferrer">View on store ↗</a>}
+          {live.refundPolicyUrl && <a className="underline" href={live.refundPolicyUrl} target="_blank" rel="noreferrer">Refund policy ↗</a>}
+        </div>
+      </section>
+    </>
+  );
+}

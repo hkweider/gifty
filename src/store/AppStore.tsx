@@ -202,6 +202,10 @@ export interface StoreGroup {
   code?: string;
   codeExpired?: boolean;
   freeShippingAway?: number;
+  /** Store has no quote (live merchants): shipping and tax are confirmed at its checkout. */
+  atCheckout?: boolean;
+  /** Merchant domain for live stores (one Shopify cart and checkout step per store). */
+  storeDomain?: string;
 }
 
 /** Groups the cart by store and applies store quotes. `issue` simulates the 09c problem states. */
@@ -222,6 +226,8 @@ export function summarizeCart(cart: CartItem[], issue: CartIssue = null) {
   groups.forEach((g, i) => {
     g.step = i + 1;
     const q = storeQuotes[g.store] ?? { codeSavings: 0, shippingTax: 0 };
+    g.atCheckout = !storeQuotes[g.store];
+    g.storeDomain = getProduct(g.items[0].productId).live?.storeDomain;
     const live = g.items.filter((x) => !x.unavailable);
     g.listTotal = live.reduce((s, x) => s + x.listPrice * x.qty, 0);
     const sale = live.reduce((s, x) => s + (x.listPrice - x.price) * x.qty, 0);
@@ -244,6 +250,7 @@ export function summarizeCart(cart: CartItem[], issue: CartIssue = null) {
   const shippingTax = groups.reduce((s, g) => s + g.shippingTax, 0);
   return {
     groups,
+    atCheckout: groups.some((g) => g.atCheckout),
     count: live.length,
     items, discounts, shippingTax,
     total: items - discounts + shippingTax,

@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { productTypes, products, searchSuggestions } from '../../data/sample';
 import type { Product, ProductTypeId } from '../../data/types';
-import { getProduct, getType, ideaCount, LIMITED_REVIEWS, productsByType, searchProducts } from '../../lib/api';
+import { getProduct, getType, ideaCount, LIMITED_REVIEWS, LIVE, productsByType, searchProducts, type LiveQuery } from '../../lib/api';
+import { useCatalog } from '../../lib/useCatalog';
 import { money, plural } from '../../lib/format';
 import { useApp } from '../../store/AppStore';
 import { Button, Chip, EmptyState, Meter, Swatch, useDismiss } from '../../components/ui';
@@ -12,13 +13,16 @@ import type { ListCtx } from './ListWorkspace';
 
 const MAX_COMPARE = 3;
 
+const isLimited = (p: Product) => (p.live ? !p.customer : LIVE ? false : LIMITED_REVIEWS.has(p.id));
+
 /**
  * Find gifts tab. View is URL-driven so every board state is linkable:
- *   (none)          start (04a) when the list is empty, otherwise all types grouped (04)
+ *   (none)          start (04a) when the list is empty, otherwise ideas grouped (04)
  *   ?type=brewing   one product type (04d)
  *   ?q=pour-over    search results (04g)
- *   ?state=loading|empty|limited|demo  (05a–05d)
+ *   ?state=loading|empty|limited|demo  (05a–05d, forced; live mode reaches loading/demo on its own)
  *   ?max=100        budget filter override (set by Ask, 04e)
+ * Results come from Shopify's Global Catalog unless the build uses sample data (VITE_DATA=sample).
  */
 export function FindGifts({ ctx }: { ctx: ListCtx }) {
   const { person, shortlist, isShortlisted, toggleShortlist } = useApp();
@@ -37,6 +41,8 @@ export function FindGifts({ ctx }: { ctx: ListCtx }) {
   const changed = params.get('changed');
   const excluded = (params.get('skip') ?? '').split(',').filter(Boolean);
   const listEmpty = !shortlist.some((s) => s.personId === ctx.personId && s.occasionId === ctx.occasionId);
+  const intent = `Gift for ${p.name} (${p.relationship.toLowerCase()}): ${p.summary}${p.avoids.length ? `; avoid ${p.avoids.join(', ').toLowerCase()}` : ''}`;
+  const liveQuery = (query: string, t: ProductTypeId): LiveQuery => ({ query, type: t, maxPrice: maxBudget, intent });
 
   const set = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -45,13 +51,17 @@ export function FindGifts({ ctx }: { ctx: ListCtx }) {
   };
 
   const filters = { maxBudget, noSubscription: noSub, durable };
-  const visible = (list: Product[]) => list.filter((x) => !excluded.includes(x.id)).filter((x) => !(hideLimited && LIMITED_REVIEWS.has(x.id)));
+  const visible = (list: Product[]) => list
+    .filter((x) => !excluded.some((e) => x.id === e || x.name.toLowerCase().includes(e)))
+    .filter((x) => x.price <= maxBudget)
+    .filter((x) => !(hideLimited && isLimited(x)));
 
   const card = (prod: Product, all: Product[], extra?: { demo?: boolean }) => (
     <ProductCard
       key={prod.id}
       product={prod}
       demo={extra?.demo}
+      limited={isLimited(prod)}
       shortlisted={isShortlisted(prod.id, ctx.personId, ctx.occasionId)}
       compared={compare.includes(prod.id)}
       compareDisabled={compare.length >= MAX_COMPARE}
@@ -76,21 +86,42 @@ export function FindGifts({ ctx }: { ctx: ListCtx }) {
     </div>
   );
 
+  const loadingBlock = (cards = 6) => (
+    <>
+      <div className="notice">
+        <div className="t-13 w-700">Searching stores for {p.name}…</div>
+        <div className="t-12">Checking the Shopify catalog and gathering expert and customer reviews. Results appear as they arrive.</div>
+      </div>
+      <Meter value={0.4} dark boxed />
+      {filterRow()}
+      <div className="grid-3">{products.slice(0, cards).map((x) => <SkeletonCard key={x.id} blurb={LIVE ? '' : x.blurb} />)}</div>
+    </>
+  );
+
+  const demoBlock = (onRetry: () => void) => {
+    const demo = products.filter((x) => x.id !== 'deskmat').slice(0, 6);
+    return (
+      <>
+        <div className="notice">
+          <div className="t-13 w-700">Live results are unavailable right now</div>
+          <div className="t-12">Showing a labelled demo set so you can still try the flow. Demo items cannot be shortlisted, added to the cart or bought.</div>
+          <div className="row gap-8" style={{ marginTop: 4 }}>
+            <Button variant="primary" onClick={onRetry}>Retry live search</Button>
+            <Button>Keep exploring demo set</Button>
+          </div>
+        </div>
+        {filterRow()}
+        <div className="grid-3">{demo.map((x) => card(x, demo, { demo: true }))}</div>
+      </>
+    );
+  };
+
   let body: React.ReactNode;
 
   if (state === 'loading') {
-    const blurbs = products.slice(0, 6).map((x) => x.blurb);
-    body = (
-      <>
-        <div className="notice">
-          <div className="t-13 w-700">Searching stores for {p.name}…</div>
-          <div className="t-12">Checking the Shopify catalog and gathering expert and customer reviews. Results appear as they arrive.</div>
-        </div>
-        <Meter value={0.4} dark boxed />
-        {filterRow()}
-        <div className="grid-3">{blurbs.map((b) => <SkeletonCard key={b} blurb={b} />)}</div>
-      </>
-    );
+    body = loadingBlock();
+  } else if (state === 'demo') {
+    body = demoBlock(() => set({ state: 'loading' }));
   } else if (state === 'empty') {
     const closest = products.slice(0, 3);
     body = (
@@ -115,85 +146,114 @@ export function FindGifts({ ctx }: { ctx: ListCtx }) {
         </section>
       </>
     );
-  } else if (state === 'demo') {
-    const demo = products.filter((x) => x.id !== 'deskmat').slice(0, 6);
-    body = (
-      <>
-        <div className="notice">
-          <div className="t-13 w-700">Live results are unavailable right now</div>
-          <div className="t-12">Showing a labelled demo set so you can still try the flow. Demo items cannot be shortlisted, added to the cart or bought.</div>
-          <div className="row gap-8" style={{ marginTop: 4 }}>
-            <Button variant="primary" onClick={() => set({ state: 'loading' })}>Retry live search</Button>
-            <Button>Keep exploring demo set</Button>
-          </div>
-        </div>
-        {filterRow()}
-        <div className="grid-3">{demo.map((x) => card(x, demo, { demo: true }))}</div>
-      </>
-    );
   } else if (q) {
-    const results = visible(searchProducts(q, filters));
-    const counts: [string, number][] = [['All', results.length], ['Pour-over coffee sets', results.filter((x) => x.type === 'brewing').length], ['Pour-over kettles', results.filter((x) => x.type === 'accessories').length], ['Other', results.filter((x) => x.type === 'giftsets').length]];
     body = (
-      <>
-        <div className="row gap-8">
-          <h2 className="t-15 w-700">Results for "{q}"</h2>
-          <span className="t-11">{plural(results.length, 'idea')} for {p.name}</span>
-          <span className="spacer" />
-          <span className="t-11">Searched 14 stores · prices checked 4 min ago</span>
-        </div>
-        <div className="row gap-6 wrap">
-          <span className="t-12 w-700">Matches by product type:</span>
-          {counts.map(([l, n], i) => <Chip key={l} on={i === 0}>{l} · {n}</Chip>)}
-        </div>
-        {filterRow()}
-        {results.length ? <div className="grid-4">{results.map((x) => card(x, results))}</div> : <EmptyState title="No results" body="Try a different search or relax a filter." />}
-      </>
+      <Results
+        query={liveQuery(q, 'giftsets')}
+        sample={searchProducts(q, filters)}
+        loading={loadingBlock}
+        failed={demoBlock}
+        render={(raw) => {
+          const results = visible(raw);
+          return (
+            <>
+              <div className="row gap-8">
+                <h2 className="t-15 w-700">Results for "{q}"</h2>
+                <span className="t-11">{plural(results.length, 'idea')} for {p.name}</span>
+                <span className="spacer" />
+                <span className="t-11">{LIVE ? 'Searched the Shopify catalog · prices checked just now' : 'Searched 14 stores · prices checked 4 min ago'}</span>
+              </div>
+              {!LIVE && (
+                <div className="row gap-6 wrap">
+                  <span className="t-12 w-700">Matches by product type:</span>
+                  {([['All', results.length], ['Pour-over coffee sets', results.filter((x) => x.type === 'brewing').length], ['Pour-over kettles', results.filter((x) => x.type === 'accessories').length], ['Other', results.filter((x) => x.type === 'giftsets').length]] as const)
+                    .map(([l, n], i) => <Chip key={l} on={i === 0}>{l} · {n}</Chip>)}
+                </div>
+              )}
+              {filterRow()}
+              {results.length ? <div className="grid-4">{results.map((x) => card(x, results))}</div> : <EmptyState title="No results" body="Try a different search or relax a filter." />}
+            </>
+          );
+        }}
+      />
     );
   } else if (type) {
     const t = getType(type);
-    const results = visible(productsByType(type, filters));
     body = (
       <>
         {changed && <ChangedNotice text={changed} onUndo={() => set({ changed: null, max: null, skip: null })} />}
-        <div className="row gap-8">
-          <Button size="md" onClick={() => set({ type: null })}><Icon name="arrowRight" size={14} style={{ transform: 'rotate(180deg)' }} /> All types</Button>
-          <h2 className="t-15 w-700">{t.name}</h2>
-          <span className="t-11">{plural(ideaCount(type), 'idea')} for {p.name}</span>
-          <span className="spacer" />
-          {t.narrow.length > 0 && <span className="t-12 w-700">Narrow by:</span>}
-          {t.narrow.map((n) => <Chip key={n} large>{n}</Chip>)}
-        </div>
-        {filterRow()}
-        {results.length ? <div className="grid-3">{results.map((x) => card(x, results))}</div> : <EmptyState title={`No ${t.name.toLowerCase()} ideas within these filters`} body="Relax a filter or ask in words to see more." />}
-        {state === 'limited' && <LimitedFilter hide={hideLimited} setHide={setHideLimited} />}
+        <Results
+          query={liveQuery(t.query, type)}
+          sample={productsByType(type, filters)}
+          loading={loadingBlock}
+          failed={demoBlock}
+          render={(raw) => {
+            const results = visible(raw);
+            return (
+              <>
+                <div className="row gap-8">
+                  <Button size="md" onClick={() => set({ type: null })}><Icon name="arrowRight" size={14} style={{ transform: 'rotate(180deg)' }} /> All types</Button>
+                  <h2 className="t-15 w-700">{t.name}</h2>
+                  <span className="t-11">{plural(LIVE ? results.length : ideaCount(type), 'idea')} for {p.name}</span>
+                  <span className="spacer" />
+                  {t.narrow.length > 0 && <span className="t-12 w-700">Narrow by:</span>}
+                  {t.narrow.map((n) => <Chip key={n} large onClick={() => LIVE && set({ q: `${n} ${t.name}`.toLowerCase(), type: null })}>{n}</Chip>)}
+                </div>
+                {filterRow()}
+                {results.length ? <div className="grid-3">{results.map((x) => card(x, results))}</div> : <EmptyState title={`No ${t.name.toLowerCase()} ideas within these filters`} body="Relax a filter or ask in words to see more." />}
+                {state === 'limited' && <LimitedFilter hide={hideLimited} setHide={setHideLimited} />}
+              </>
+            );
+          }}
+        />
       </>
     );
   } else if (listEmpty && !params.get('view') && state !== 'limited') {
     body = <StartView ctx={ctx} onType={(id) => set({ type: id })} />;
   } else {
-    const groups = (['brewing', 'giftsets', 'accessories'] as ProductTypeId[]).map((id) => ({ t: getType(id), items: visible(productsByType(id, filters)) }));
-    const all = groups.flatMap((g) => g.items);
+    // Grouped ideas: by the person's interests (live) or by sample product type.
+    const groups = LIVE
+      ? (p.interests.length ? p.interests : ['Thoughtful']).slice(0, 3).map((i) => ({ key: i, name: i, query: `${i} gift`, type: 'giftsets' as ProductTypeId, sample: [] as Product[] }))
+      : (['brewing', 'giftsets', 'accessories'] as ProductTypeId[]).map((id) => ({ key: id, name: getType(id).name, query: getType(id).query, type: id, sample: productsByType(id, filters) }));
     body = (
       <>
         {changed && <ChangedNotice text={changed} onUndo={() => set({ changed: null, max: null, skip: null })} />}
         {state === 'limited' && (
           <div className="notice">
             <div className="t-13 w-700">Some results have limited reviews</div>
-            <div className="t-12">We could not find expert reviews or independent testing for {all.filter((x) => LIMITED_REVIEWS.has(x.id)).length} of these. They are still shown, marked clearly, and ranked lower.</div>
+            <div className="t-12">We could not find expert reviews or independent testing for some of these. They are still shown, marked clearly, and ranked lower.</div>
           </div>
         )}
         {filterRow()}
-        {groups.filter((g) => g.items.length).map((g) => (
-          <section key={g.t.id} className="col gap-6" aria-label={g.t.name}>
-            <div className="group-head">
-              <h2 className="t-14 w-700">{g.t.name}</h2>
-              <span className="t-11">{plural(ideaCount(g.t.id), 'idea')}</span>
-              <span className="spacer" />
-              <button type="button" className="link-btn t-11" onClick={() => set({ type: g.t.id })}>See all →</button>
-            </div>
-            <div className="grid-3">{g.items.slice(0, 3).map((x) => card(x, all))}</div>
-          </section>
+        {groups.map((g) => (
+          <Results
+            key={g.key}
+            query={liveQuery(g.query, g.type)}
+            sample={g.sample}
+            loading={() => <GroupSkeleton name={g.name} />}
+            failed={(retry) => (
+              <div className="notice row gap-8" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <span className="t-12 w-700">{g.name}: live results are unavailable right now.</span>
+                <span className="spacer" />
+                <Button size="sm" onClick={retry}>Retry</Button>
+              </div>
+            )}
+            render={(raw) => {
+              const items = visible(raw);
+              if (!items.length) return null;
+              return (
+                <section className="col gap-6" aria-label={g.name}>
+                  <div className="group-head">
+                    <h2 className="t-14 w-700">{g.name}</h2>
+                    <span className="t-11">{plural(LIVE ? items.length : ideaCount(g.type), 'idea')}</span>
+                    <span className="spacer" />
+                    <button type="button" className="link-btn t-11" onClick={() => set(LIVE ? { q: g.query } : { type: g.type })}>See all →</button>
+                  </div>
+                  <div className="grid-3">{items.slice(0, 3).map((x) => card(x, items))}</div>
+                </section>
+              );
+            }}
+          />
         ))}
         {state === 'limited' && <LimitedFilter hide={hideLimited} setHide={setHideLimited} />}
       </>
@@ -215,6 +275,29 @@ export function FindGifts({ ctx }: { ctx: ListCtx }) {
         </div>
       )}
     </>
+  );
+}
+
+/** Renders live catalog results (or sample data when not live) with loading and failure states. */
+function Results({ query, sample, render, loading, failed }: {
+  query: LiveQuery; sample: Product[];
+  render: (list: Product[]) => React.ReactNode;
+  loading: () => React.ReactNode;
+  failed: (retry: () => void) => React.ReactNode;
+}) {
+  const res = useCatalog(LIVE ? query : null);
+  if (!LIVE) return <>{render(sample)}</>;
+  if (res.status === 'loading') return <>{loading()}</>;
+  if (res.status === 'error') return <>{failed(res.retry)}</>;
+  return <>{render(res.products)}</>;
+}
+
+function GroupSkeleton({ name }: { name: string }) {
+  return (
+    <section className="col gap-6" aria-busy="true" aria-label={`${name}, loading`}>
+      <div className="group-head"><h2 className="t-14 w-700">{name}</h2><span className="t-11">Searching…</span></div>
+      <div className="grid-3">{[0, 1, 2].map((i) => <SkeletonCard key={i} blurb="" />)}</div>
+    </section>
   );
 }
 
@@ -242,12 +325,15 @@ function LimitedFilter({ hide, setHide }: { hide: boolean; setHide: (v: boolean)
 /** Board 04a: start with a product type, plus ideas from the profile. */
 function StartView({ ctx, onType }: { ctx: ListCtx; onType: (id: ProductTypeId) => void }) {
   const { person } = useApp();
+  const [, setParams] = useSearchParams();
   const p = person(ctx.personId);
-  const ideas: { label: string; type: ProductTypeId; tint: 'blush' | 'sage' | 'peach' }[] = [
-    { label: 'Pour-over kit', type: 'brewing', tint: 'blush' },
-    { label: 'Coffee tasting set', type: 'giftsets', tint: 'sage' },
-    { label: 'Travel mug', type: 'accessories', tint: 'peach' },
-  ];
+  const ideas: { label: string; type: ProductTypeId; tint: 'blush' | 'sage' | 'peach'; query?: string }[] = LIVE && p.interests.length
+    ? p.interests.slice(0, 3).map((i, n) => ({ label: `${i} gift`, type: 'giftsets', tint: (['blush', 'sage', 'peach'] as const)[n], query: `${i} gift` }))
+    : [
+      { label: 'Pour-over kit', type: 'brewing', tint: 'blush' },
+      { label: 'Coffee tasting set', type: 'giftsets', tint: 'sage' },
+      { label: 'Travel mug', type: 'accessories', tint: 'peach' },
+    ];
   return (
     <>
       <h2 className="t-14 w-700">Start with a product type</h2>
@@ -257,21 +343,21 @@ function StartView({ ctx, onType }: { ctx: ListCtx; onType: (id: ProductTypeId) 
             <span className="type-tile__img" style={{ background: `var(--${t.tint})` }} />
             <span className="type-tile__body">
               <span className="t-13 w-700">{t.name}</span>
-              <span className="t-11">{plural(ideaCount(t.id), 'idea')} for {p.name}</span>
+              <span className="t-11">{LIVE ? `See ideas for ${p.name}` : `${plural(ideaCount(t.id), 'idea')} for ${p.name}`}</span>
             </span>
           </button>
         ))}
       </div>
       <section className="card card--dashed col gap-6" style={{ padding: 14, borderColor: 'var(--peach)' }}>
         <h2 className="t-14 w-700">Ideas based on what we know about {p.name}</h2>
-        <div className="t-11">{p.summary.replace('wants durable, no subscription', 'no subscriptions')}</div>
+        <div className="t-11">{p.summary.replace('wants durable, no subscription', 'no subscriptions') || 'Add interests to get ideas'}</div>
         <div className="row gap-10" style={{ marginTop: 4 }}>
           {ideas.map((i) => (
-            <button key={i.label} type="button" className="idea" onClick={() => onType(i.type)}>
+            <button key={i.label} type="button" className="idea" onClick={() => (i.query ? setParams({ q: i.query }) : onType(i.type))}>
               <Swatch tint={i.tint} size={34} radius={99} />
               <span className="col">
                 <span className="t-12 w-700">{i.label}</span>
-                <span className="t-10">{getType(i.type).name}</span>
+                <span className="t-10">{i.query ? 'Search the catalog' : getType(i.type).name}</span>
               </span>
             </button>
           ))}
@@ -289,7 +375,8 @@ function SearchBox({ personName, initial, onSearch, onType, onProduct }: {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
   const input = useRef<HTMLInputElement>(null);
-  const prods = useMemo(() => searchSuggestions.products.map(getProduct), []);
+  const prods = useMemo(() => (LIVE ? [] : searchSuggestions.products.map(getProduct)), []);
+  const types = LIVE ? productTypes.filter((t) => `${t.name} ${t.query}`.toLowerCase().includes(text.trim().toLowerCase().split(' ')[0] ?? '')).slice(0, 3) : [];
   const pick = (fn: () => void) => { fn(); setOpen(false); };
   return (
     <div className="search-wrap" ref={ref}>
@@ -308,15 +395,23 @@ function SearchBox({ personName, initial, onSearch, onType, onProduct }: {
       </form>
       {open && (
         <div className="suggest" id="find-suggest" role="listbox">
-          <div className="suggest__head">Product types</div>
-          {searchSuggestions.types.map((t) => (
-            <button key={t.label} type="button" role="option" className="suggest__row" onClick={() => pick(() => onType(t.type))}>
-              <Swatch tint={t.tint} size={28} radius={99} />
-              <span className="col flex1"><span className="t-12 w-700">{t.label}</span><span className="t-10">{t.sub}</span></span>
-              <span className="t-11 w-700">See ideas</span>
-            </button>
-          ))}
-          <div className="suggest__head">Products</div>
+          {(LIVE ? types.length > 0 : true) && <div className="suggest__head">Product types</div>}
+          {LIVE
+            ? types.map((t) => (
+              <button key={t.id} type="button" role="option" className="suggest__row" onClick={() => pick(() => onType(t.id))}>
+                <Swatch tint={t.tint} size={28} radius={99} />
+                <span className="col flex1"><span className="t-12 w-700">{t.name}</span><span className="t-10">{t.query}</span></span>
+                <span className="t-11 w-700">See ideas</span>
+              </button>
+            ))
+            : searchSuggestions.types.map((t) => (
+              <button key={t.label} type="button" role="option" className="suggest__row" onClick={() => pick(() => onType(t.type))}>
+                <Swatch tint={t.tint} size={28} radius={99} />
+                <span className="col flex1"><span className="t-12 w-700">{t.label}</span><span className="t-10">{t.sub}</span></span>
+                <span className="t-11 w-700">See ideas</span>
+              </button>
+            ))}
+          {prods.length > 0 && <div className="suggest__head">Products</div>}
           {prods.map((x) => (
             <button key={x.id} type="button" role="option" className="suggest__row" onClick={() => pick(() => onProduct(x.id))}>
               <Swatch tint={x.tint} size={28} radius={99} />

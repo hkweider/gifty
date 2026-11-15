@@ -15,7 +15,7 @@
 .pcard.is-shortlisted { border-color: var(--line-strong); }
 .pcard.is-demo { border-style: dashed; border-color: var(--line-dashed); }
 .pcard__img {
-  position: relative; height: 100px; flex: none; width: 100%;
+  position: relative; height: 100px; overflow: hidden; flex: none; width: 100%;
   border: 0; border-bottom: 1px solid var(--line); padding: 0;
 }
 .pcard__demo {
@@ -24,7 +24,8 @@
   font-size: 10px; font-weight: 700; letter-spacing: .3px; padding: 3px 6px;
 }
 .pcard__body { display: flex; flex-direction: column; gap: 6px; padding: 10px; flex: 1; }
-.pcard__name { border: 0; background: none; padding: 0; text-align: left; font-size: 13px; font-weight: 700; }
+.pcard__name { border: 0; background: none; padding: 0; text-align: left; font-size: 13px; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pcard__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pcard__name:hover { text-decoration: underline; }
 .pcard__reviews { border-top: 1px solid var(--line); padding-top: 6px; display: flex; flex-direction: column; gap: 3px; }
 

@@ -48,6 +48,20 @@ export interface ProductType {
   name: string;
   tint: Tint;
   narrow: string[];
+  /** Search phrase used for this type when results come from the live catalog. */
+  query: string;
+}
+
+/** Fields present on products that came from Shopify's Global Catalog. */
+export interface LiveInfo {
+  variantId: string;
+  storeDomain: string;
+  description: string;
+  images: string[];
+  url?: string;
+  refundPolicyUrl?: string;
+  features: string[];
+  variants: { id: string; title: string; available: boolean; price: number }[];
 }
 
 export interface Product {
@@ -65,6 +79,9 @@ export interface Product {
   arrives: string;
   variants?: string[];
   image?: string;
+  /** ISO currency code; sample data is CAD. */
+  currency?: string;
+  live?: LiveInfo;
 }
 
 export type ShortlistStatus = 'Selected' | 'Considering';
