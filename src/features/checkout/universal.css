@@ -1,0 +1,28 @@
+/* Simulated Universal Checkout: Gifty's status panel plus a checkout "popup" window. */
+.uc-status {
+  position: absolute; left: 28px; top: 28px; width: 340px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-2xl);
+  padding: 18px; display: flex; flex-direction: column; gap: 12px;
+}
+.uc-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--line-chip); }
+.uc-dot--active { background: var(--accent); }
+.uc-dot--processing { background: var(--marker-gold); }
+.uc-dot--completed { background: var(--sage); outline: 1px solid #9DBF98; }
+.uc-log summary { cursor: pointer; }
+.uc-log ol { margin: 6px 0 0; padding-left: 0; list-style: none; max-height: 160px; overflow: auto; }
+.uc-log code { font-size: 10px; background: var(--surface-sunk); padding: 0 4px; border-radius: 4px; }
+
+.uc-window {
+  width: 460px; max-height: calc(100vh - 48px); margin-left: 300px;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: 14px;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.uc-chrome { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface-sunk); border-bottom: 1px solid var(--line); }
+.uc-lock { font-size: 11px; }
+.uc-body { padding: 18px 20px; overflow: auto; }
+.uc-center { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 36px 32px; }
+.uc-brand { font-size: 20px; font-weight: 700; letter-spacing: -.2px; color: var(--ink); }
+.uc-shop { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.uc-ship { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.uc-ship legend { margin-bottom: 4px; }
+.uc-dismiss { position: absolute; top: 20px; right: 20px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: flex; align-items: center; justify-content: center; }

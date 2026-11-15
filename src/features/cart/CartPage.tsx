@@ -10,6 +10,7 @@ import { products, stores } from '../../data/sample';
 import { DealsModal } from './DealsModal';
 import { GiftMessageModal } from './GiftMessageModal';
 import { CheckoutModal } from '../checkout/CheckoutModal';
+import { UniversalCheckoutSim } from '../checkout/UniversalCheckoutSim';
 import './cart.css';
 
 const ISSUES: CartIssue[] = ['price-changed', 'code-expired', 'out-of-stock', 'delivery-miss'];
@@ -28,6 +29,7 @@ export function CartPage({ saved: savedView }: { saved?: boolean }) {
   const [deals, setDeals] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const checkout = params.get('checkout') === '1';
+  const checkoutAll = params.get('checkout') === 'all';
   const setParam = (k: string, v: string | null) => { const n = new URLSearchParams(params); if (v === null) n.delete(k); else n.set(k, v); setParams(n); };
 
   // Budget per person · occasion
@@ -112,12 +114,16 @@ export function CartPage({ saved: savedView }: { saved?: boolean }) {
           <span className="t-11">{plural(s.count, 'item')} · Order total</span>
           <span className="t-16 w-700">{money(s.total)}</span>
           {listSavings > 0 && <span className="pill">You save {money(listSavings)}</span>}
-          <Button variant="primary" size="lg" onClick={() => setParam('checkout', '1')}>Check out ({plural(s.count, 'item')})</Button>
+          <Button variant="primary" size="lg" onClick={() => setParam('checkout', s.groups.length > 1 ? 'all' : '1')}>
+            {s.groups.length > 1 ? `Check out all (${plural(s.count, 'item')})` : `Check out (${plural(s.count, 'item')})`}
+          </Button>
+          {s.groups.length > 1 && <Button size="lg" onClick={() => setParam('checkout', '1')}>Store by store</Button>}
         </div>
       )}
 
       {deals && <DealsModal store={deals} groups={s.groups} onStore={setDeals} onClose={() => setDeals(null)} />}
       {message && <GiftMessageModal cartId={message} onClose={() => setMessage(null)} />}
+      {checkoutAll && <UniversalCheckoutSim groups={s.groups.filter((g) => g.items.some((i) => !i.unavailable))} onClose={() => setParam('checkout', null)} />}
       {checkout && <CheckoutModal groups={s.groups.filter((g) => g.items.some((i) => !i.unavailable))} onClose={() => setParam('checkout', null)} />}
     </div>
   );
