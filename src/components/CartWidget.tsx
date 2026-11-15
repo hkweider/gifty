@@ -21,7 +21,7 @@ export function CartWidget() {
       </div>
       <div className="cart-widget__thumbs" aria-hidden="true">
         {(thumbs.length ? thumbs : [null, null, null]).map((c, i) => (
-          <span key={c?.id ?? i} className="cart-widget__thumb" title={c ? getProduct(c.productId).name : undefined} />
+          <CartThumb key={c?.id ?? i} productId={c?.productId} />
         ))}
       </div>
       <div className="row-base gap-6">
@@ -32,4 +32,12 @@ export function CartWidget() {
       <Button variant="primary" size="md" block onClick={() => navigate('/cart')}>View cart</Button>
     </section>
   );
+}
+
+/** Product photo when there is one, otherwise the product's pastel tint (or blank for an empty slot). */
+function CartThumb({ productId }: { productId?: string }) {
+  if (!productId) return <span className="cart-widget__thumb" />;
+  const p = getProduct(productId);
+  const bg = p.image ? `url("${p.image}") center/cover, var(--${p.tint})` : `var(--${p.tint})`;
+  return <span className="cart-widget__thumb" title={p.name} style={{ background: bg }} />;
 }
