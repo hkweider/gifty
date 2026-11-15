@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Chip, CloseButton, LinkButton, Modal, Swatch } from '../../components/ui';
 import { Icon } from '../../components/Icon';
 import { useApp } from '../../store/AppStore';
-import { shortDate } from '../../lib/format';
+import { priceOf, shortDate } from '../../lib/format';
+import { LIVE } from '../../lib/api';
+import { useCatalog } from '../../lib/useCatalog';
 import type { Relationship } from '../../data/types';
 
 const RELATIONS: Relationship[] = ['Parent', 'Partner', 'Child', 'Friend', 'Colleague', 'Other'];
@@ -15,7 +17,7 @@ const SUGGESTIONS = [
 
 /** Add a person (02a–02e): 4 steps, an alt step 2 for "I have something in mind", and describe-in-words. */
 export function AddPersonModal() {
-  const { openModal, occasions, people, addPerson } = useApp();
+  const { openModal, occasions, people, addPerson, toggleShortlist } = useApp();
   const navigate = useNavigate();
   const close = () => openModal(null);
   const [step, setStep] = useState(1);
@@ -29,6 +31,10 @@ export function AddPersonModal() {
   const [avoids, setAvoids] = useState('');
   const [owns, setOwns] = useState('');
   const [thinking, setThinking] = useState('');
+  const [picked, setPicked] = useState<string | null>(null);
+  const [debounced, setDebounced] = useState('');
+  useEffect(() => { const t = setTimeout(() => setDebounced(thinking.trim()), 400); return () => clearTimeout(t); }, [thinking]);
+  const live = useCatalog(LIVE && mode === 'inMind' && debounced.length > 2 && !picked ? { query: debounced, type: 'giftsets', limit: 6 } : null);
   const upcoming = occasions.filter((o) => !o.reminderOnly);
   const [occasionId, setOccasionId] = useState(upcoming[0]?.id ?? '');
   const [budget, setBudget] = useState('');
@@ -44,7 +50,8 @@ export function AddPersonModal() {
       summary: [interests[0] && `${interests[0]} lover`, owns && `owns ${owns}`].filter(Boolean).join(' · '),
     }, occasionId, Number(budget.replace(/\D/g, '')) || 0);
     close();
-    navigate(`/lists/${occasionId}/${p.id}${thinking ? `?q=${encodeURIComponent(thinking)}` : ''}`);
+    if (picked) toggleShortlist(picked, p.id, occasionId);
+    navigate(`/lists/${occasionId}/${p.id}${picked ? '/shortlist' : thinking ? `?q=${encodeURIComponent(thinking)}` : ''}`);
   };
 
   const head = (
@@ -131,9 +138,25 @@ export function AddPersonModal() {
               <div>
                 <div className="search" style={{ minHeight: 34 }}>
                   <Icon name="search" size={13} stroke={2.2} />
-                  <input id="ap-think" value={thinking} onChange={(e) => setThinking(e.target.value)} placeholder="e.g. pour over coffee" />
+                  <input id="ap-think" value={thinking} onChange={(e) => { setThinking(e.target.value); setPicked(null); }} placeholder="e.g. pour over coffee" />
                 </div>
-                {thinking.trim().length > 2 && (
+                {LIVE && thinking.trim().length > 2 && !picked && (
+                  <div className="card" style={{ borderRadius: 10, marginTop: 4, overflow: 'hidden' }}>
+                    <div style={{ background: 'var(--surface-sunk)', fontSize: 10, fontWeight: 700, padding: '6px 8px' }}>Suggestions</div>
+                    {live.status === 'loading' && <div className="t-11 muted" style={{ padding: '8px' }}>Searching stores…</div>}
+                    {live.status === 'error' && <div className="t-11 muted" style={{ padding: '8px' }}>Live suggestions are unavailable right now.</div>}
+                    {live.status === 'ready' && live.products.slice(0, 3).map((x) => (
+                      <button key={x.id} type="button" className="row gap-10" style={{ width: '100%', padding: '6px 8px', border: 0, borderTop: '1px solid var(--line)', background: 'none', textAlign: 'left' }} onClick={() => { setPicked(x.id); setThinking(x.name); }}>
+                        <Swatch tint={x.tint} size={32} radius={99} image={x.image} />
+                        <span className="flex1 col min0"><span className="t-12 w-700" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.name}</span><span className="t-10">{x.store} · {priceOf(x)}</span></span>
+                        <span className="t-11 w-700">Select</span>
+                      </button>
+                    ))}
+                    <div className="t-11 w-700" style={{ padding: '6px 8px', borderTop: '1px solid var(--line)' }}>Or keep your own words: "{thinking}"</div>
+                  </div>
+                )}
+                {picked && <div className="t-11" style={{ marginTop: 6 }}>Selected. It will be added to {who}'s shortlist.</div>}
+                {!LIVE && thinking.trim().length > 2 && (
                   <div className="card" style={{ borderRadius: 10, marginTop: 4, overflow: 'hidden' }}>
                     <div className="suggest__head" style={{ background: 'var(--surface-sunk)', fontSize: 10, fontWeight: 700, padding: '6px 8px' }}>Suggestions</div>
                     {SUGGESTIONS.map((s) => (

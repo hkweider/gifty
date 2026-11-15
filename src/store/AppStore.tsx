@@ -1,10 +1,11 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   initialCart, initialSaved, initialShortlist, occasions as seedOccasions, people as seedPeople,
   purchases as seedPurchases, storeQuotes,
 } from '../data/sample';
 import type { CartItem, Occasion, Person, Purchase, SavedItem, ShortlistItem, ShortlistStatus } from '../data/types';
-import { getProduct } from '../lib/api';
+import { getProduct, LIVE, rememberProducts } from '../lib/api';
+import type { Product } from '../data/types';
 
 export type ModalKind =
   | { kind: 'addPerson'; personName?: string }
@@ -45,17 +46,42 @@ interface Ctx {
 
 const AppContext = createContext<Ctx | null>(null);
 
+const STORE_KEY = 'gifty:v1';
+interface Stored { people: Person[]; occasions: Occasion[]; shortlist: ShortlistItem[]; cart: CartItem[]; saved: SavedItem[]; purchases: Purchase[]; products: Product[] }
+function loadStored(): Stored | null {
+  if (!LIVE) return null;
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Stored;
+    rememberProducts(d.products ?? []);
+    return d;
+  } catch { return null; }
+}
+
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const same = (a: { productId: string; personId: string; occasionId: string }, productId: string, personId: string, occasionId: string) =>
   a.productId === productId && a.personId === personId && a.occasionId === occasionId;
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [people, setPeople] = useState(seedPeople);
-  const [occasions, setOccasions] = useState(seedOccasions);
-  const [shortlist, setShortlist] = useState(initialShortlist);
-  const [cart, setCart] = useState(initialCart);
-  const [saved, setSaved] = useState(initialSaved);
-  const [purchases, setPurchases] = useState(seedPurchases);
+  const [stored] = useState(loadStored);
+  const [people, setPeople] = useState(stored?.people ?? seedPeople);
+  const [occasions, setOccasions] = useState(stored?.occasions ?? seedOccasions);
+  // Live mode starts with empty lists and cart: only real products you add appear.
+  const [shortlist, setShortlist] = useState(stored?.shortlist ?? (LIVE ? [] : initialShortlist));
+  const [cart, setCart] = useState(stored?.cart ?? (LIVE ? [] : initialCart));
+  const [saved, setSaved] = useState(stored?.saved ?? (LIVE ? [] : initialSaved));
+  const [purchases, setPurchases] = useState(stored?.purchases ?? seedPurchases);
+
+  // Persist this browser's lists and cart (and the live products they reference).
+  useEffect(() => {
+    if (!LIVE) return;
+    const ids = new Set([...shortlist, ...cart, ...saved].map((x) => x.productId));
+    const products = [...ids].map((id) => { try { return getProduct(id); } catch { return null; } }).filter((x): x is Product => !!x?.live);
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ people, occasions, shortlist, cart, saved, purchases, products }));
+    } catch { /* storage full or blocked: state still works in memory */ }
+  }, [people, occasions, shortlist, cart, saved, purchases]);
   const [modal, openModal] = useState<ModalKind>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const toastTimer = useRef<number>();

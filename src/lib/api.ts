@@ -21,6 +21,9 @@ export interface Filters {
 /** Products seen from the live catalog this session, so lists and the cart can resolve them. */
 const registry = new Map<string, Product>();
 
+/** Restore live products saved with the lists and cart. */
+export const rememberProducts = (list: Product[]) => list.forEach((p) => registry.set(p.id, p));
+
 export const getProduct = (id: string): Product => {
   const p = registry.get(id) ?? products.find((x) => x.id === id);
   if (!p) throw new Error(`Unknown product ${id}`);

@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Chip, LinkButton, Meter, Swatch, useDismiss } from '../../components/ui';
 import { Icon } from '../../components/Icon';
 import { summarizeCart, useApp, type CartIssue, type StoreGroup } from '../../store/AppStore';
-import { getProduct, priceBreakdown } from '../../lib/api';
+import { getProduct, LIVE, priceBreakdown } from '../../lib/api';
+import { useCatalog } from '../../lib/useCatalog';
 import { money, plain, plural } from '../../lib/format';
 import { products, stores } from '../../data/sample';
 import { DealsModal } from './DealsModal';
@@ -281,10 +282,14 @@ function Breakdown({ cartId, store, onClose }: { cartId: string; store: StoreGro
 }
 
 function SavedList() {
-  const { saved, moveSavedToCart, removeSaved, occasion, person } = useApp();
+  const { saved, moveSavedToCart, removeSaved, occasion, person, addToCart, isInCart } = useApp();
   const navigate = useNavigate();
   const first = saved[0];
-  const ideas = products.filter((p) => !saved.some((s) => s.productId === p.id)).slice(4, 7);
+  const who = first ? person(first.personId) : null;
+  const live = useCatalog(LIVE && who ? { query: `${who.interests[0] ?? 'thoughtful'} gift`, type: 'giftsets', limit: 8 } : null);
+  const ideas = (LIVE ? live.products : products)
+    .filter((p) => !saved.some((s) => s.productId === p.id) && !(first && isInCart(p.id, first.personId, first.occasionId)))
+    .slice(LIVE ? 0 : 4, LIVE ? 3 : 7);
   return (
     <>
       <section className="card store-card" aria-label="Saved for later">
@@ -320,11 +325,12 @@ function SavedList() {
           <div className="grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
             {ideas.map((p) => (
               <div key={p.id} className="pcard" style={{ borderRadius: 12 }}>
-                <span style={{ height: 70, background: `var(--${p.tint})` }} />
-                <div className="col gap-2" style={{ padding: 8 }}>
-                  <span className="t-11 w-700">{p.name}</span>
-                  <span className="t-11">{money(p.price)}</span>
-                  <Button variant="primary" size="sm" block style={{ marginTop: 6, minHeight: 28 }} onClick={() => navigate(`/lists/${first.occasionId}/${first.personId}?product=${p.id}`)}>Add</Button>
+                <span style={{ height: 70, background: p.image ? `url("${p.image}") center/cover, var(--${p.tint})` : `var(--${p.tint})` }} />
+                <div className="col gap-2" style={{ padding: 8, flex: 1 }}>
+                  <span className="t-11 w-700" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.name}</span>
+                  <span className="t-11">{money(p.price, { currency: p.currency })}</span>
+                  <Button variant="primary" size="sm" block style={{ marginTop: 'auto', minHeight: 28 }}
+                    onClick={() => (p.live ? addToCart(p.id, first.personId, first.occasionId) : navigate(`/lists/${first.occasionId}/${first.personId}?product=${p.id}`))}>Add</Button>
                 </div>
               </div>
             ))}

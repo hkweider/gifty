@@ -133,8 +133,8 @@ export const searchSuggestions = {
 };
 
 export const giftGuides = [
-  { id: 'g1', title: 'Christmas gifts for the coffee lover', body: '12 ideas from expert reviews and buyer ratings. Updated this week.', tiles: ['image', 'peach', 'sage'] as const },
-  { id: 'g2', title: 'Under CA$ 50 for him', body: '18 practical picks from independent makers, all under CA$ 50.', tiles: ['sage', 'sky', 'butter'] as const },
-  { id: 'g3', title: 'Thoughtful gifts for parents', body: '14 ideas that work for any occasion, from tea sets to planters.', tiles: ['peach', 'blush', 'sky'] as const },
-  { id: 'g4', title: 'Last-minute ideas', body: '10 gifts that arrive by Dec 24 with standard shipping.', tiles: ['butter', 'sage', 'peach'] as const },
+  { id: 'g1', query: 'coffee lover gift', title: 'Christmas gifts for the coffee lover', body: '12 ideas from expert reviews and buyer ratings. Updated this week.', tiles: ['image', 'peach', 'sage'] as const },
+  { id: 'g2', query: 'practical gift for him', max: 50, title: 'Under CA$ 50 for him', body: '18 practical picks from independent makers, all under CA$ 50.', tiles: ['sage', 'sky', 'butter'] as const },
+  { id: 'g3', query: 'thoughtful gift for parents', title: 'Thoughtful gifts for parents', body: '14 ideas that work for any occasion, from tea sets to planters.', tiles: ['peach', 'blush', 'sky'] as const },
+  { id: 'g4', query: 'gift set ready to give', title: 'Last-minute ideas', body: '10 gifts that arrive by Dec 24 with standard shipping.', tiles: ['butter', 'sage', 'peach'] as const },
 ];
