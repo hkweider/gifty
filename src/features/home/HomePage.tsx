@@ -39,7 +39,7 @@ export function HomePage() {
       <div className="row gap-16 stretch">
         <section className="home__cart" aria-labelledby="home-cart">
           <div className="row" style={{ paddingBottom: 6 }}>
-            <h2 id="home-cart" className="serif t-22">Your cart · {plural(cart.length, 'gift')} for {plural(recipients, 'person', 'people')}</h2>
+            <h2 id="home-cart" className="serif t-22">Your cart{cart.length ? ` · ${plural(cart.length, 'gift')} for ${plural(recipients, 'person', 'people')}` : ''}</h2>
             <span className="spacer" />
             <Link to="/cart" className="t-12 w-600 underline">View full cart →</Link>
           </div>
@@ -59,7 +59,12 @@ export function HomePage() {
               </div>
             );
           })}
-          {cart.length === 0 && <div className="home__cart-row t-12 muted">Nothing in your cart yet. Shortlisted gifts appear here when you add them.</div>}
+          {cart.length === 0 && (
+            <div className="home__cart-row" style={{ justifyContent: 'space-between' }}>
+              <span className="t-12 muted">Nothing in your cart yet. Gifts you add appear here.</span>
+              <Button variant="primary" size="md" onClick={() => navigate('/explore')}>Start shopping</Button>
+            </div>
+          )}
         </section>
 
         <section className="home__total" aria-label="Order total">
