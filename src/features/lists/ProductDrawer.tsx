@@ -75,7 +75,7 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
         </div>
 
         <div className="drawer__body">
-          <div className="row gap-14">
+          <div className={p.live ? 'col gap-14' : 'row gap-14'}>
             {p.live ? <LiveGallery images={p.live.images} name={p.name} tint={p.tint} /> : (
             <div className="gallery">
               <div className="gallery__main">
@@ -260,18 +260,18 @@ function LiveGallery({ images, name, tint }: { images: string[]; name: string; t
   const [i, setI] = useState(0);
   useEffect(() => setI(0), [images]);
   return (
-    <div className="gallery">
+    <div className="gallery gallery--wide">
       <div className="gallery__main">
         {images.length ? <img src={images[i]} alt={name} /> : <span className="gallery__ph" style={{ background: `var(--${tint})` }} />}
         {images.length > 0 && <span className="gallery__count">{i + 1} / {images.length}</span>}
       </div>
       {images.length > 1 && (
-        <div className="row gap-4">
-          {images.slice(0, images.length > 4 ? 3 : 4).map((src, n) => (
+        <div className="row gap-6">
+          {images.slice(0, images.length > 6 ? 5 : 6).map((src, n) => (
             <button key={src} type="button" className="gallery__thumb" aria-current={i === n} aria-label={`Image ${n + 1}`}
               style={{ background: `url(${src}) center/cover` }} onClick={() => setI(n)} />
           ))}
-          {images.length > 4 && <button type="button" className="gallery__thumb gallery__more" onClick={() => setI(3)} aria-label={`${images.length - 3} more images`}>+{images.length - 3}</button>}
+          {images.length > 6 && <button type="button" className="gallery__thumb gallery__more" onClick={() => setI(5)} aria-label={`${images.length - 5} more images`}>+{images.length - 5}</button>}
         </div>
       )}
     </div>
@@ -331,10 +331,10 @@ function VariantPicker({ detail, state, onChoose }: {
         <div key={o.name} className="col gap-4">
           <span className="t-11 w-700">{o.name}{detail.selected.find((x) => x.name === o.name) ? `: ${detail.selected.find((x) => x.name === o.name)!.label}` : ''}</span>
           <div className="row gap-6 wrap" role="radiogroup" aria-label={o.name}>
-            {o.values.filter((x) => x.exists).slice(0, 12).map((x) => (
+            {o.values.filter((x) => x.exists).map((x) => (
               <button
                 key={x.label} type="button" role="radio" aria-checked={isSel(o.name, x.label)}
-                className={`chip${isSel(o.name, x.label) ? ' chip--on' : ''}`}
+                className={`chip opt-chip${isSel(o.name, x.label) ? ' chip--on' : ''}`}
                 style={x.available ? undefined : { textDecoration: 'line-through', color: 'var(--faint)' }}
                 title={x.available ? undefined : 'Sold out'}
                 onClick={() => onChoose(o.name, x.label)}
