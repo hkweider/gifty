@@ -167,9 +167,9 @@ button.chip--on:hover { background: #3A3531; }
 .menu__item + .menu__item--divided { border-top: 1px solid var(--line); }
 
 /* ---- Toast ----
-   Top-left of the main area, compact: clear of the bottom action bars, the chat button and the drawer controls. */
+   Bottom-left of the main area, sitting just above the bottom action bars (compare, checkout: 54–60px tall). */
 .toast {
-  position: fixed; z-index: 60; top: 12px; left: calc(var(--sidebar-w) + var(--page-pad));
+  position: fixed; z-index: 60; bottom: 76px; left: calc(var(--sidebar-w) + var(--page-pad));
   max-width: 420px; display: flex; align-items: center; gap: 12px;
   background: var(--button); color: var(--on-button);
   border-radius: var(--r-md); padding: 10px 10px 10px 14px; min-height: 40px;
