@@ -4,6 +4,7 @@ import { Avatar, Button, useDismiss } from '../../components/ui';
 import { useApp } from '../../store/AppStore';
 import { plural, shortDate } from '../../lib/format';
 import type { Person } from '../../data/types';
+import { RemovePersonModal } from './RemovePersonModal';
 import './people.css';
 
 /** People (13): everyone you give gifts to. */
@@ -31,6 +32,7 @@ export function PeoplePage() {
 function PersonCard({ p }: { p: Person }) {
   const { occasions } = useApp();
   const navigate = useNavigate();
+  const [removing, setRemoving] = useState(false);
   const occ = occasions.filter((o) => o.people.some((x) => x.personId === p.id));
   const loved = p.history.filter((h) => h.reaction === 'Loved').length;
   const liked = p.history.filter((h) => h.reaction === 'Liked').length;
@@ -45,6 +47,8 @@ function PersonCard({ p }: { p: Person }) {
         </div>
         <span className="spacer" />
         <button type="button" className="link-btn t-11" onClick={() => navigate(`/people/${p.id}`)}>Edit</button>
+        <button type="button" className="link-btn t-11" style={{ marginLeft: 12, fontWeight: 400 }} onClick={() => setRemoving(true)}>Remove</button>
+        {removing && <RemovePersonModal personId={p.id} onClose={() => setRemoving(false)} />}
       </div>
       <div className="col gap-4">
         <div className="t-11 w-700 muted">Preferences</div>

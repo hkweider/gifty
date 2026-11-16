@@ -41,6 +41,7 @@ interface Ctx {
   setGiftMessage: (cartId: string, msg: string) => void;
   markStorePurchased: (store: string) => void;
   addPerson: (p: Partial<Person> & { name: string }, occasionId?: string, budget?: number) => Person;
+  removePerson: (personId: string) => void;
   addOccasion: (o: Omit<Occasion, 'id'>) => Occasion;
 }
 
@@ -179,6 +180,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }),
           ...p,
         ]);
+      },
+      removePerson: (personId) => {
+        // Snapshot for undo, then drop the person and everything that only belonged to them.
+        const before = { people, occasions, shortlist, cart, saved, purchases };
+        const name = people.find((x) => x.id === personId)?.name ?? 'Person';
+        setPeople((x) => x.filter((p) => p.id !== personId));
+        setOccasions((os) => os
+          .map((o) => ({ ...o, people: o.people.filter((x) => x.personId !== personId) }))
+          .filter((o) => o.people.length > 0));
+        setShortlist((x) => x.filter((s) => s.personId !== personId));
+        setCart((x) => x.filter((c) => c.personId !== personId));
+        setSaved((x) => x.filter((s) => s.personId !== personId));
+        setPurchases((x) => x.filter((p) => p.personId !== personId));
+        showToast({
+          message: `Removed ${name}`,
+          actions: [{ label: 'Undo', onClick: () => {
+            setPeople(before.people); setOccasions(before.occasions); setShortlist(before.shortlist);
+            setCart(before.cart); setSaved(before.saved); setPurchases(before.purchases); showToast(null);
+          } }],
+        });
       },
       addPerson: (p, occasionId, budget) => {
         let id = slug(p.name) || 'person';

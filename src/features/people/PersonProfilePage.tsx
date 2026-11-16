@@ -5,6 +5,8 @@ import { getProduct } from '../../lib/api';
 import { daysUntil, plural, shortDate } from '../../lib/format';
 import { GiftHistory } from '../lists/AboutTab';
 import { FindGiftsMenu } from './PeoplePage';
+import { RemovePersonModal } from './RemovePersonModal';
+import { useState } from 'react';
 import '../lists/lists.css';
 import './people.css';
 
@@ -13,6 +15,7 @@ export function PersonProfilePage() {
   const { personId = '' } = useParams();
   const { people, occasions, shortlist, isInCart, openModal } = useApp();
   const navigate = useNavigate();
+  const [removing, setRemoving] = useState(false);
   const p = people.find((x) => x.id === personId);
   if (!p) return <Navigate to="/people" replace />;
   const occ = occasions.filter((o) => o.people.some((x) => x.personId === p.id));
@@ -31,6 +34,8 @@ export function PersonProfilePage() {
         <span className="spacer" />
         <FindGiftsMenu person={p} primary />
         <Button style={{ minHeight: 44 }}>Edit</Button>
+        <Button style={{ minHeight: 44 }} onClick={() => setRemoving(true)}>Remove</Button>
+        {removing && <RemovePersonModal personId={p.id} onClose={() => setRemoving(false)} onRemoved={() => navigate('/people')} />}
       </div>
       <div className="row gap-30" style={{ alignItems: 'flex-start', gap: 32 }}>
         <section className="col gap-16" style={{ width: 360, flex: 'none' }}>
