@@ -35,7 +35,8 @@ export function FindGifts({ ctx }: { ctx: ListCtx }) {
   const q = params.get('q');
   const state = params.get('state');
   const maxParam = params.get('max');
-  const maxBudget = maxParam === 'none' ? Infinity : maxParam ? Number(maxParam) : ctx.budget;
+  // No budget set (0) means no price limit, not "under $0".
+  const maxBudget = maxParam === 'none' ? Infinity : maxParam ? Number(maxParam) : ctx.budget > 0 ? ctx.budget : Infinity;
   const noSub = params.get('nosub') !== '0';
   const durable = params.get('durable') !== '0';
   const changed = params.get('changed');
