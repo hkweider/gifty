@@ -2,15 +2,15 @@ import { useApp } from '../store/AppStore';
 import { LinkButton } from './ui';
 
 export function ToastHost() {
-  const { toast } = useApp();
+  const { toast, showToast } = useApp();
   if (!toast) return null;
   return (
-    <div className={`toast${toast.compact ? ' toast--compact' : ''}`} role="status" aria-live="polite">
+    <div className="toast" role="status" aria-live="polite">
       <span>{toast.message}</span>
-      <span className="spacer" />
       {toast.actions?.map((a) => (
         <LinkButton key={a.label} onClick={a.onClick}>{a.label}</LinkButton>
       ))}
+      <button type="button" className="toast__close" aria-label="Dismiss" onClick={() => showToast(null)}>×</button>
     </div>
   );
 }

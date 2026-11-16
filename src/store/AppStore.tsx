@@ -90,7 +90,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback((t: Toast | null) => {
     window.clearTimeout(toastTimer.current);
     setToast(t);
-    if (t) toastTimer.current = window.setTimeout(() => setToast(null), 6000);
+    if (t) toastTimer.current = window.setTimeout(() => setToast(null), 4500);
   }, []);
 
   const person = useCallback((id: string) => people.find((p) => p.id === id)!, [people]);

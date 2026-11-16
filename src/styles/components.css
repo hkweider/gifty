@@ -166,17 +166,18 @@ button.chip--on:hover { background: #3A3531; }
 .menu__item--strong { font-weight: 700; }
 .menu__item + .menu__item--divided { border-top: 1px solid var(--line); }
 
-/* ---- Toast ---- */
+/* ---- Toast ----
+   Top-left of the main area, compact: clear of the bottom action bars, the chat button and the drawer controls. */
 .toast {
-  position: fixed; z-index: 60; bottom: 20px;
-  left: calc(var(--sidebar-w) + var(--page-pad)); right: var(--page-pad);
-  display: flex; align-items: center; gap: 16px;
+  position: fixed; z-index: 60; top: 12px; left: calc(var(--sidebar-w) + var(--page-pad));
+  max-width: 420px; display: flex; align-items: center; gap: 12px;
   background: var(--button); color: var(--on-button);
-  border-radius: var(--r-md); padding: 0 16px; min-height: 40px;
-  font-size: 13px; font-weight: 600;
+  border-radius: var(--r-md); padding: 10px 10px 10px 14px; min-height: 40px;
+  font-size: 13px; font-weight: 600; line-height: 1.3;
 }
-.toast--compact { left: 50%; right: auto; transform: translateX(-20%); width: 700px; border-radius: 0; }
 .toast .link-btn { color: var(--on-button); text-decoration: underline; font-size: 12px; }
+.toast__close { border: 0; background: none; color: var(--on-button); opacity: .7; font-size: 16px; line-height: 1; padding: 2px 4px; }
+.toast__close:hover { opacity: 1; }
 
 /* ---- Tables / key-value rows ---- */
 .kv { display: flex; align-items: baseline; gap: 8px; font-size: 12px; }
