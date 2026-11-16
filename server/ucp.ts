@@ -14,8 +14,11 @@
 const CATALOG_ENDPOINT = 'https://catalog.shopify.com/api/ucp/mcp';
 const DEFAULT_PROFILE = 'https://shopify.dev/ucp/agent-profiles/examples/2026-08-25/valid-with-capabilities.json';
 
-const profile = () => process.env.UCP_AGENT_PROFILE || DEFAULT_PROFILE;
-const token = () => process.env.SHOPIFY_UCP_TOKEN || '';
+// Works in Node (server) and in the browser (static hosting, where there is no process.env).
+const env = (k: string): string | undefined => (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[k];
+const profile = () => env('UCP_AGENT_PROFILE') || DEFAULT_PROFILE;
+// Never set this in a static (browser) build: a token there would be public.
+const token = () => env('SHOPIFY_UCP_TOKEN') || '';
 
 export class UcpError extends Error {
   constructor(message: string, public status = 502, public retryAfter?: number) { super(message); }
@@ -80,7 +83,10 @@ async function callTool<T>(endpoint: string, name: string, args: Record<string, 
 }
 
 async function callToolOnce<T>(endpoint: string, name: string, args: Record<string, unknown>, buyerIp?: string): Promise<T> {
-  const headers: Record<string, string> = { 'content-type': 'application/json', accept: 'application/json' };
+  // In the browser, send a CORS "simple request" (text/plain, no custom headers): Shopify's catalog
+  // endpoint rejects the preflight that application/json would trigger, but accepts the JSON body.
+  const inBrowser = typeof (globalThis as { document?: unknown }).document !== 'undefined';
+  const headers: Record<string, string> = inBrowser ? { 'content-type': 'text/plain' } : { 'content-type': 'application/json', accept: 'application/json' };
   const auth = token();
   if (auth) {
     headers.authorization = `Bearer ${auth}`;

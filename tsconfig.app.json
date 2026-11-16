@@ -22,6 +22,7 @@
     "outDir": "node_modules/.tmp/app"
   },
   "include": [
-    "src"
+    "src",
+    "server/ucp.ts"
   ]
 }

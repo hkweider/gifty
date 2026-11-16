@@ -94,7 +94,20 @@ function toProduct(d: LiveProductDto, type: ProductTypeId): Product {
   return p;
 }
 
+/**
+ * Static hosting (GitHub Pages) has no server, so builds with VITE_DIRECT_UCP=1 call Shopify's UCP
+ * endpoints straight from the browser (they allow cross-origin requests). Anonymous tier only:
+ * never put an API token in a browser build.
+ */
+const DIRECT = !!import.meta.env.VITE_DIRECT_UCP;
+const direct: Record<string, (body: never) => Promise<unknown>> = {
+  '/api/catalog/search': async (b) => (await import('../../server/ucp')).searchCatalog(b),
+  '/api/catalog/variant': async (b: { id: string; selected?: { name: string; label: string }[] }) => (await import('../../server/ucp')).getProductDetail(b.id, b.selected ?? []),
+  '/api/carts': async (b) => (await import('../../server/ucp')).createCart(b),
+};
+
 async function post<T>(path: string, body: unknown): Promise<T> {
+  if (DIRECT && direct[path]) return (await direct[path](body as never)) as T;
   const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { error?: string }).error ?? `Request failed (${res.status})`);

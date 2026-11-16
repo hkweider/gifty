@@ -49,3 +49,8 @@ VITE_DATA=sample VITE_HASH_ROUTER=1 npx vite build --base ./
 ```
 
 In a network-restricted environment (such as a Claude cloud sandbox), start the dev server with `NODE_USE_ENV_PROXY=1 npm run dev` so the server's requests use the proxy.
+
+## Hosting on GitHub Pages
+`.github/workflows/pages.yml` builds and deploys on every push to `main`. One-time setup: repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+GitHub Pages is static, so that build (`VITE_DIRECT_UCP=1`) calls Shopify's UCP endpoints straight from the browser. They allow cross-origin requests, but only in the Anonymous tier: never add an API token to a static build. Once you have a token, host the `/api` routes on a server instead.
