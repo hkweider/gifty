@@ -11,21 +11,6 @@ export const TODAY = new Date('2026-11-15T14:00:00');
 
 export const people: Person[] = [
   {
-    id: 'dad', name: 'Dad', initial: 'D', relationship: 'Parent', pronoun: 'he',
-    summary: 'Coffee lover · owns a grinder · wants durable, no subscription',
-    interests: ['Coffee', 'Hiking', 'Cooking'],
-    avoids: ['Subscriptions', 'Scented items'],
-    owns: ['Burr grinder', 'French press', 'Insulated mug'],
-    sizes: { shirt: 'L', shoe: '10', phone: 'Pixel 8' },
-    style: 'Practical', usualSpend: '$60 – $150', stores: ['Hartwell Home', 'Northfield Goods'],
-    history: [
-      { id: 'h1', name: 'Leather Trail Wallet', occasion: "Father's Day 2025", store: 'Northfield Goods', price: 45, note: 'Uses it every day', reaction: 'Loved', tint: 'sage' },
-      { id: 'h2', name: 'Insulated Trail Flask', occasion: 'Christmas 2024', store: 'Hartwell Home', price: 120, note: 'Still his favourite', reaction: 'Loved', tint: 'peach' },
-      { id: 'h3', name: 'Beard Care Set', occasion: 'Birthday 2024', store: 'Birch & Co.', price: 60, note: 'Wanted a different colour', reaction: 'Liked', tint: 'butter' },
-      { id: 'h4', name: 'Compact Bluetooth Speaker', occasion: 'Christmas 2023', store: 'Hartwell Home', price: 35, note: 'Already had one', reaction: 'Meh', tint: 'sky' },
-    ],
-  },
-  {
     id: 'mom', name: 'Mom', initial: 'M', relationship: 'Parent', pronoun: 'she',
     summary: 'Gardener and baker · nothing needing assembly',
     interests: ['Gardening', 'Baking'],
@@ -46,12 +31,10 @@ export const people: Person[] = [
 
 export const occasions: Occasion[] = [
   {
-    id: 'christmas-2026', name: 'Christmas 2026', shortName: 'Christmas', date: '2026-12-25', budget: 270,
-    people: [{ personId: 'dad', budget: 150 }, { personId: 'mom', budget: 80 }, { personId: 'sam', budget: 40 }],
+    id: 'christmas-2026', name: 'Christmas 2026', shortName: 'Christmas', date: '2026-12-25', budget: 120,
+    people: [{ personId: 'mom', budget: 80 }, { personId: 'sam', budget: 40 }],
   },
   { id: 'moms-birthday', name: "Mom's birthday", shortName: 'birthday', date: '2027-01-12', budget: 60, people: [{ personId: 'mom', budget: 60 }] },
-  { id: 'dads-birthday', name: "Dad's birthday", shortName: 'birthday', date: '2027-03-03', budget: 100, people: [{ personId: 'dad', budget: 100 }] },
-  { id: 'fathers-day', name: "Father's Day", shortName: "Father's Day", date: '2027-06-18', budget: 0, people: [{ personId: 'dad', budget: 0 }], reminderOnly: true },
 ];
 
 export const productTypes: ProductType[] = [
@@ -92,35 +75,21 @@ export const storeQuotes: Record<string, { code?: string; codeSavings: number; s
 };
 
 export const initialShortlist: ShortlistItem[] = [
-  { productId: 'kettle', personId: 'dad', occasionId: 'christmas-2026', status: 'Selected', variant: 'Matte white', addedAt: 4 },
-  { productId: 'dripper', personId: 'dad', occasionId: 'christmas-2026', status: 'Considering', addedAt: 3 },
-  { productId: 'tea', personId: 'dad', occasionId: 'christmas-2026', status: 'Considering', addedAt: 2 },
-  { productId: 'cleaning', personId: 'dad', occasionId: 'christmas-2026', status: 'Considering', addedAt: 1 },
   { productId: 'deskmat', personId: 'sam', occasionId: 'christmas-2026', status: 'Selected', addedAt: 0 },
   { productId: 'tea', personId: 'mom', occasionId: 'moms-birthday', status: 'Selected', addedAt: 0 },
 ];
 
 export const initialCart: CartItem[] = [
-  { id: 'c1', productId: 'kettle', personId: 'dad', occasionId: 'christmas-2026', qty: 1, why: 'Store sale; price dropped CA$ 6 since you added it' },
   { id: 'c2', productId: 'deskmat', personId: 'sam', occasionId: 'christmas-2026', qty: 1 },
   { id: 'c3', productId: 'tea', personId: 'mom', occasionId: 'moms-birthday', qty: 1 },
 ];
 
 export const initialSaved: SavedItem[] = [
-  { id: 's1', productId: 'dripper', personId: 'dad', occasionId: 'christmas-2026', savedAgo: 'Saved 3 days ago' },
 ];
 
 export const purchases: Purchase[] = [
-  {
-    id: 'p1', item: 'Merino Hiking Socks', personId: 'dad', occasionLabel: 'Christmas', occasionId: 'christmas-2026', store: 'Hartwell Home', date: 'Nov 12', price: 38, status: 'Shipped', arrives: 'Dec 3–6', tint: 'butter',
-    details: {
-      shipTo: '142 Maple Ave · Toronto, ON', carrier: 'Canada Post · Tracking: 7300 1182 9054', lastUpdate: 'Last update: today, 9:12 AM · from store link',
-      order: 'Order # HH-48213 · Paid on Hartwell Home', returns: 'Return by: Jan 15 · 30-day returns, free label', gift: 'Gift note / wrapped: ☐ wrapped',
-    },
-  },
   { id: 'p2', item: 'Controller Charging Dock', personId: 'sam', occasionLabel: 'Christmas', occasionId: 'christmas-2026', store: 'Hartwell Home', date: 'Nov 12', price: 20, status: 'Shipped', arrives: 'Dec 3–6', tint: 'sky' },
   { id: 'p3', item: 'Hand-painted Planter', personId: 'mom', occasionLabel: 'Christmas', occasionId: 'christmas-2026', store: 'Birch & Co.', date: 'Nov 10', price: 34, status: 'Processing', arrives: 'Dec 10–14', tint: 'blush' },
-  { id: 'p4', item: 'Leather Trail Wallet', personId: 'dad', occasionLabel: "Father's Day 2025", store: 'Northfield Goods', date: 'Jun 8', price: 45, status: 'Delivered', arrives: 'Jun 14', tint: 'sage' },
 ];
 
 /** Search suggestions shown under the Find gifts search box. */

@@ -38,7 +38,7 @@ export function SavingsPage() {
                 </div>
                 <p className="t-12">{w.body}</p>
                 <div className="row gap-10" style={{ marginTop: 4 }}>
-                  <Button size="md" onClick={() => w.action.startsWith('Preview') && navigate('/lists/christmas-2026/dad?product=dripper')}>{w.action}</Button>
+                  <Button size="md" onClick={() => w.action.startsWith('Preview') && navigate('/lists/christmas-2026/mom?product=dripper')}>{w.action}</Button>
                   <LinkButton className="t-11">Dismiss</LinkButton>
                 </div>
               </div>

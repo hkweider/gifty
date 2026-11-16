@@ -46,7 +46,7 @@ interface Ctx {
 
 const AppContext = createContext<Ctx | null>(null);
 
-const STORE_KEY = 'gifty:v1';
+const STORE_KEY = 'gifty:v2'; // bump when the seed data changes, so saved demos start fresh
 interface Stored { people: Person[]; occasions: Occasion[]; shortlist: ShortlistItem[]; cart: CartItem[]; saved: SavedItem[]; purchases: Purchase[]; products: Product[] }
 function loadStored(): Stored | null {
   if (!LIVE) return null;
