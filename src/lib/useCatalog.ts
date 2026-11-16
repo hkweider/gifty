@@ -18,7 +18,12 @@ export function useCatalog(q: LiveQuery | null) {
     if (cache.has(key)) { setState({ status: 'ready', products: cache.get(key)! }); return; }
     let live = true;
     setState({ status: 'loading', products: [] });
-    searchLive(q)
+    // Retry twice with backoff before showing the failure state (anonymous Shopify traffic is rate limited).
+    const run = (n: number): Promise<Product[]> => searchLive(q).catch((e: unknown) => {
+      if (n >= 2 || !live) throw e;
+      return new Promise((r) => setTimeout(r, 1500 * 2 ** n + Math.random() * 500)).then(() => run(n + 1));
+    });
+    run(0)
       .then((products) => { cache.set(key, products); if (live) setState({ status: 'ready', products }); })
       .catch((e: unknown) => live && setState({ status: 'error', products: [], error: e instanceof Error ? e.message : String(e) }));
     return () => { live = false; };

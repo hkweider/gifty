@@ -98,13 +98,14 @@ export function FindGifts({ ctx }: { ctx: ListCtx }) {
     </>
   );
 
-  const demoBlock = (onRetry: () => void) => {
+  const demoBlock = (onRetry: () => void, reason?: string) => {
     const demo = products.filter((x) => x.id !== 'deskmat').slice(0, 6);
     return (
       <>
         <div className="notice">
           <div className="t-13 w-700">Live results are unavailable right now</div>
           <div className="t-12">Showing a labelled demo set so you can still try the flow. Demo items cannot be shortlisted, added to the cart or bought.</div>
+          {reason && <div className="t-11 muted">Reason: {reason}</div>}
           <div className="row gap-8" style={{ marginTop: 4 }}>
             <Button variant="primary" onClick={onRetry}>Retry live search</Button>
             <Button>Keep exploring demo set</Button>
@@ -285,12 +286,12 @@ function Results({ query, sample, render, loading, failed }: {
   query: LiveQuery; sample: Product[];
   render: (list: Product[]) => React.ReactNode;
   loading: () => React.ReactNode;
-  failed: (retry: () => void) => React.ReactNode;
+  failed: (retry: () => void, reason?: string) => React.ReactNode;
 }) {
   const res = useCatalog(LIVE ? query : null);
   if (!LIVE) return <>{render(sample)}</>;
   if (res.status === 'loading') return <>{loading()}</>;
-  if (res.status === 'error') return <>{failed(res.retry)}</>;
+  if (res.status === 'error') return <>{failed(res.retry, res.error)}</>;
   return <>{render(res.products)}</>;
 }
 
