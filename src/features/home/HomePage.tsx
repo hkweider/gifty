@@ -33,15 +33,7 @@ export function HomePage() {
           <div className="t-13 w-500 muted">{plural(daysUntil(next.date), 'day')} until {next.shortName}</div>
           <h1 className="display-xl">{greeting()}, {USER.name}</h1>
         </div>
-        <div className="home__illustration" aria-hidden="true">
-          <img src={girlWithGift} alt="" />
-          {/* Small hearts drifting up from the gift, staggered */}
-          {[0, 1, 2].map((i) => (
-            <svg key={i} className={`home__heart home__heart--${i}`} viewBox="0 0 24 24" width="14" height="14">
-              <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="var(--ink)" strokeWidth="2" strokeLinejoin="round" />
-            </svg>
-          ))}
-        </div>
+        <img className="home__illustration" src={girlWithGift} alt="" />
       </header>
 
       <div className="row gap-16 stretch">
