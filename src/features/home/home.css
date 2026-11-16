@@ -1,6 +1,24 @@
 .home__hero { position: relative; height: 137px; display: flex; align-items: flex-end; }
 .home__hero > .col { padding-bottom: 8px; }
-.home__illustration { position: absolute; right: 47px; top: 12px; height: 153px; width: auto; pointer-events: none; }
+.home__illustration { position: absolute; right: 47px; top: 12px; height: 153px; width: 161px; pointer-events: none; }
+.home__illustration img {
+  height: 153px; width: auto; display: block;
+  transform-origin: 50% 100%;
+  animation: home-breathe 4.2s ease-in-out infinite, home-sway 9s ease-in-out infinite;
+}
+.home__heart { position: absolute; left: 92px; top: 70px; opacity: 0; animation: home-float 6s ease-out infinite; }
+.home__heart--1 { left: 112px; animation-delay: 2s; }
+.home__heart--2 { left: 76px; animation-delay: 4s; }
+@keyframes home-breathe { 0%, 100% { scale: 1 1; } 50% { scale: 1.015 1.03; } }
+@keyframes home-sway { 0%, 100% { rotate: -1.2deg; } 50% { rotate: 1.2deg; } }
+@keyframes home-float {
+  0% { opacity: 0; transform: translate(0, 0) scale(.6); }
+  15% { opacity: .9; }
+  100% { opacity: 0; transform: translate(10px, -70px) scale(1.1) rotate(12deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home__illustration img, .home__heart { animation: none; }
+}
 
 .home__cart {
   flex: 1; min-width: 0; background: var(--sky); border-radius: var(--r-2xl); padding: 24px;
