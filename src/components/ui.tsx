@@ -71,12 +71,20 @@ export function Modal({
   onClose, children, size, label, mainOnly,
 }: { onClose: () => void; children: ReactNode; size?: 'wide' | 'md' | 'sm'; label: string; mainOnly?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  // Keep the latest onClose without re-running effects: callers often pass a new function each render,
+  // and re-running the focus effect would steal focus on every keystroke.
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current();
     window.addEventListener('keydown', onKey);
-    ref.current?.querySelector<HTMLElement>('input, textarea, button')?.focus();
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, []);
+  useEffect(() => {
+    // Focus the first field when the modal opens (fall back to the first button).
+    const el = ref.current;
+    (el?.querySelector<HTMLElement>('input:not([type=checkbox]):not([type=radio]), textarea') ?? el?.querySelector<HTMLElement>('button'))?.focus();
+  }, []);
   return (
     <div className={`scrim${mainOnly ? ' scrim--main' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={ref} className={`modal${size ? ` modal--${size}` : ''}`} role="dialog" aria-modal="true" aria-label={label}>

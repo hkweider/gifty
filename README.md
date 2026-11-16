@@ -54,3 +54,6 @@ In a network-restricted environment (such as a Claude cloud sandbox), start the 
 `.github/workflows/pages.yml` builds and deploys on every push to `main`. One-time setup: repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
 GitHub Pages is static, so that build (`VITE_DIRECT_UCP=1`) calls Shopify's UCP endpoints straight from the browser. They allow cross-origin requests, but only in the Anonymous tier: never add an API token to a static build. Once you have a token, host the `/api` routes on a server instead.
+
+## Hosting on Vercel
+Vercel serves the built site and runs the `/api` routes as serverless functions (`api/`), using the same UCP client as the dev server. `vercel.json` sends all other paths to the app. Optional environment variables in Vercel → Settings → Environment Variables: `SHOPIFY_UCP_TOKEN` and `UCP_AGENT_PROFILE` (server-side only, safe there).
