@@ -323,7 +323,6 @@ function VariantPicker({ detail, state, onChoose }: {
   const checks: { ok: boolean; text: string }[] = v ? [
     { ok: detail.shipsToCountry, text: detail.shipsToCountry ? `Ships to ${detail.country === 'CA' ? 'Canada' : detail.country}` : `Doesn't ship to ${detail.country === 'CA' ? 'Canada' : detail.country}` },
     { ok: !v.subscriptionOnly, text: v.subscriptionOnly ? 'Subscription only' : 'One-time purchase' },
-    { ok: v.nativeCheckout, text: v.nativeCheckout ? 'Shopify checkout' : 'Finishes on the store\'s own site' },
   ] : [];
   return (
     <div className="col gap-8" aria-busy={state === 'loading'}>
