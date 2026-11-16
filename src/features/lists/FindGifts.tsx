@@ -150,6 +150,8 @@ export function FindGifts({ ctx }: { ctx: ListCtx }) {
     );
   } else if (q) {
     body = (
+      <>
+      {changed && <ChangedNotice text={changed} onUndo={() => set({ changed: null, max: null, skip: null, q: null })} />}
       <Results
         query={liveQuery(q, 'giftsets')}
         sample={searchProducts(q, filters)}
@@ -178,6 +180,7 @@ export function FindGifts({ ctx }: { ctx: ListCtx }) {
           );
         }}
       />
+      </>
     );
   } else if (type) {
     const t = getType(type);

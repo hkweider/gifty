@@ -100,6 +100,7 @@ function toProduct(d: LiveProductDto, type: ProductTypeId): Product {
  * never put an API token in a browser build.
  */
 const DIRECT = !!import.meta.env.VITE_DIRECT_UCP;
+export const DIRECT_UCP = DIRECT;
 const direct: Record<string, (body: never) => Promise<unknown>> = {
   '/api/catalog/search': async (b) => (await import('../../server/ucp')).searchCatalog(b),
   '/api/catalog/variant': async (b: { id: string; selected?: { name: string; label: string }[] }) => (await import('../../server/ucp')).getProductDetail(b.id, b.selected ?? []),
@@ -151,6 +152,36 @@ export interface ProductDetail {
 /** Variant options, price, stock and delivery eligibility for one product (UCP get_product). */
 export async function getProductDetail(id: string, selected: { name: string; label: string }[] = []) {
   return post<ProductDetail>('/api/catalog/variant', { id, selected });
+}
+
+export interface ChatTurn { role: 'user' | 'assistant'; content: string }
+export interface ChatContextDto {
+  person: { name: string; relationship: string; summary: string; interests: string[]; avoids: string[]; owns: string[] };
+  occasion: { name: string; date: string; budget: number };
+  product?: {
+    name: string; store: string; price: number; listPrice?: number; currency: string; description?: string;
+    rating?: { value: number; count: string }; variant?: string; inStock?: boolean; shipsToCanada?: boolean;
+    subscriptionOnly?: boolean; url?: string;
+  };
+}
+
+/** Ask the gift chat (Claude, server side). Not available in static builds: there is no server to hold the key. */
+export async function askChat(messages: ChatTurn[], context: ChatContextDto) {
+  if (DIRECT) throw new Error('Chat needs the server version of Gifty (Vercel or npm run dev). It is off on static hosting.');
+  return post<{ reply: string }>('/api/chat', { messages, context });
+}
+
+export interface RefineResult { reply: string; query: string | null; maxBudget: number | null; skip: string[]; changed: string | null }
+
+/** Turn the Ask conversation into result changes (Claude, server side). */
+export async function refineResults(input: {
+  messages: ChatTurn[];
+  person: ChatContextDto['person'];
+  occasion: ChatContextDto['occasion'];
+  current: { query?: string; maxBudget?: number | null; skip?: string[] };
+}) {
+  if (DIRECT) throw new Error('Refining in conversation needs the server version of Gifty (Vercel or npm run dev).');
+  return post<RefineResult>('/api/refine', input);
 }
 
 /** Create a cart at one merchant and return the URL of that store's checkout. */

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button, LinkButton } from '../../components/ui';
 import { Icon } from '../../components/Icon';
+import { ProductChat } from './ProductChat';
+import type { ChatContextDto } from '../../lib/api';
 import { useApp } from '../../store/AppStore';
 import { getProduct, getProductDetail, type ProductDetail } from '../../lib/api';
 import { money, priceOf } from '../../lib/format';
@@ -59,6 +61,20 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
   const choose = (name: string, label: string) =>
     setSelected((cur) => [...(detail?.selected ?? cur).filter((x) => x.name !== name), { name, label }]);
   const cartVariant = p.live && v ? { id: v.id, title: v.title, price: v.price, listPrice: v.listPrice } : undefined;
+  // Chat about this product (opens in place of the product details).
+  const [chatOpen, setChatOpen] = useState(false);
+  const [pendingAsk, setPendingAsk] = useState<string | undefined>();
+  const chatContext: ChatContextDto = {
+    person: { name: who.name, relationship: who.relationship, summary: who.summary, interests: who.interests, avoids: who.avoids, owns: who.owns },
+    occasion: { name: occ.name, date: occ.date, budget },
+    product: {
+      name: v && v.title.length > 12 ? v.title : p.name, store: p.store, price, listPrice: listPrice ?? undefined,
+      currency: p.currency ?? 'CAD', description: p.live?.description ?? p.blurb, rating: p.customer ? { value: p.customer.rating, count: p.customer.count } : undefined,
+      variant: detail?.selected.map((x) => `${x.name}: ${x.label}`).join(', ') || undefined,
+      inStock: v ? v.available : undefined, shipsToCanada: detail ? detail.shipsToCountry : undefined,
+      subscriptionOnly: v?.subscriptionOnly, url: p.live?.url,
+    },
+  };
   const variantLabel = p.live ? (detail?.selected.map((x) => x.label).join(' / ') || undefined) : variant;
   const thumbPos = ['center/cover', '20% 80%/260%', '80% 30%/260%'];
 
@@ -67,13 +83,19 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
       <div className="drawer-scrim" onClick={onClose} />
       <aside className="drawer" role="dialog" aria-modal="true" aria-label={p.name}>
         <div className="drawer__head">
-          <LinkButton onClick={onClose}>← Results</LinkButton>
+          {chatOpen ? <LinkButton onClick={() => setChatOpen(false)}>← Product</LinkButton> : <LinkButton onClick={onClose}>← Results</LinkButton>}
           <span className="spacer" />
           <LinkButton disabled={!prev} onClick={() => prev && onNavigate(prev)}>‹ Prev</LinkButton>
           <LinkButton disabled={!next} onClick={() => next && onNavigate(next)}>Next ›</LinkButton>
+          <button type="button" className={`chat-btn${chatOpen ? ' is-on' : ''}`} aria-pressed={chatOpen} aria-label={`Chat about this gift for ${who.name}`} title="Chat about this gift" onClick={() => setChatOpen(!chatOpen)}>
+            <svg width="16" height="16" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" aria-hidden="true"><path d="M4 5h20v14H13l-6 5v-5H4z" /><path d="M9 10h10M9 14h6" strokeLinecap="round" /></svg>
+          </button>
           <LinkButton onClick={onClose}>Close ×</LinkButton>
         </div>
 
+        {chatOpen ? (
+          <ProductChat productId={p.id} personName={who.name} context={chatContext} initial={pendingAsk} onConsumeInitial={() => setPendingAsk(undefined)} />
+        ) : (
         <div className="drawer__body">
           <div className={p.live ? 'col gap-14' : 'row gap-14'}>
             {p.live ? <LiveGallery images={p.live.images} name={p.name} tint={p.tint} /> : (
@@ -213,11 +235,17 @@ export function ProductDrawer({ ctx, productId, siblings, onNavigate, onClose, o
             </section>
           )}
           </>}
-          <form className="row gap-6" onSubmit={(e) => e.preventDefault()}>
-            <input className="input" placeholder="Ask about this product…" aria-label="Ask about this product" />
+          <form className="row gap-6" onSubmit={(e) => {
+            e.preventDefault();
+            const field = e.currentTarget.elements.namedItem('ask') as HTMLInputElement;
+            if (field.value.trim()) { setPendingAsk(field.value.trim()); field.value = ''; }
+            setChatOpen(true);
+          }}>
+            <input name="ask" className="input" placeholder="Ask about this product…" aria-label="Ask about this product" />
             <Button type="submit">Ask</Button>
           </form>
         </div>
+        )}
 
         <div className="drawer__foot">
           <Button aria-pressed={shortlisted} onClick={() => toggleShortlist(p.id, ctx.personId, ctx.occasionId, variantLabel)}>

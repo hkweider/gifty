@@ -57,3 +57,9 @@ GitHub Pages is static, so that build (`VITE_DIRECT_UCP=1`) calls Shopify's UCP 
 
 ## Hosting on Vercel
 Vercel serves the built site and runs the `/api` routes as serverless functions (`api/`), using the same UCP client as the dev server. `vercel.json` sends all other paths to the app. Optional environment variables in Vercel → Settings → Environment Variables: `SHOPIFY_UCP_TOKEN` and `UCP_AGENT_PROFILE` (server-side only, safe there).
+
+## Chat (Claude)
+- **Product chat:** the chat button at the top right of the product panel (or "Ask about this product…") answers questions about that product for that person. It's grounded in the catalog data and the person's profile.
+- **Refine in conversation:** the Ask button on Find gifts. Claude reads the conversation and changes the results (new search, budget, words to hide), shown in the "Changed:" notice with Undo.
+- Server routes: `/api/chat` and `/api/refine` (`server/chat.ts`), model `claude-opus-5-5` at low effort, with server-side refusal fallbacks enabled.
+- Set `ANTHROPIC_API_KEY`: locally in `.env` (copy `.env.example`; `.env` is git-ignored), and on Vercel under Settings → Environment Variables, then redeploy. The key stays on the server. Chat is off in the static GitHub Pages build.
